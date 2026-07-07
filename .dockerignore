@@ -1,0 +1,13 @@
+.git
+.env
+.env.local
+node_modules
+__pycache__
+*.pyc
+*.log
+
+work/uploads
+work/exports
+work/logs
+work/data
+outputs
