@@ -1,0 +1,16 @@
+[Unit]
+Description=JobPilot web service
+After=network.target
+
+[Service]
+Type=simple
+WorkingDirectory=/var/www/jobpilot
+EnvironmentFile=/var/www/jobpilot/.env
+ExecStart=/usr/bin/env node server/index.js
+Restart=always
+RestartSec=5
+User=ubuntu
+Group=ubuntu
+
+[Install]
+WantedBy=multi-user.target

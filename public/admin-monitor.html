@@ -1,0 +1,117 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>JobPilot 管理员监控</title>
+    <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
+    <link rel="stylesheet" href="/styles.css" />
+  </head>
+  <body class="admin-body">
+    <div id="adminApp" class="admin-app">
+      <header class="site-nav admin-nav">
+        <a class="brand" href="/" aria-label="返回 JobPilot">
+          <span class="brand-mark">J</span>
+          <span>JobPilot Admin</span>
+        </a>
+        <div class="nav-center admin-nav-center">
+          <div class="admin-title-block">
+            <strong>全站监控</strong>
+            <span>只读视图 · 请求、错误、超额概况</span>
+          </div>
+        </div>
+        <div class="nav-actions">
+          <a class="nav-link-btn admin-link-btn" href="/">返回工作台</a>
+        </div>
+      </header>
+
+      <main class="admin-main">
+        <section class="panel admin-hero-panel">
+          <div class="panel-head">
+            <div>
+              <h2>运行总览</h2>
+              <p>查看最近一段时间内的请求量、失败量和超额情况，帮助你快速判断服务是否稳定。</p>
+            </div>
+          </div>
+          <div class="admin-status-note hidden" id="adminStatusNote"></div>
+          <div class="admin-overview-grid" id="adminOverviewGrid">
+            <article class="usage-summary-card">
+              <small>总请求数</small>
+              <strong>--</strong>
+              <span>等待加载</span>
+            </article>
+            <article class="usage-summary-card">
+              <small>失败请求数</small>
+              <strong>--</strong>
+              <span>等待加载</span>
+            </article>
+            <article class="usage-summary-card">
+              <small>超额次数</small>
+              <strong>--</strong>
+              <span>等待加载</span>
+            </article>
+            <article class="usage-summary-card">
+              <small>最近 24 小时请求</small>
+              <strong>--</strong>
+              <span>等待加载</span>
+            </article>
+          </div>
+        </section>
+
+        <section class="admin-dual-grid">
+          <section class="panel">
+            <div class="panel-head">
+              <div>
+                <h2>最近请求</h2>
+                <p>最近 20 条请求，便于排查是哪个接口、哪个状态码先出现波动。</p>
+              </div>
+            </div>
+            <div class="admin-list" id="adminRecentRequests">
+              <div class="support-empty">等待加载请求日志。</div>
+            </div>
+          </section>
+
+          <section class="panel">
+            <div class="panel-head">
+              <div>
+                <h2>最近错误</h2>
+                <p>聚焦最近 20 条错误事件，包括超额、导出失败和模型异常。</p>
+              </div>
+            </div>
+            <div class="admin-list" id="adminRecentErrors">
+              <div class="support-empty">等待加载错误日志。</div>
+            </div>
+          </section>
+        </section>
+
+        <section class="admin-dual-grid">
+          <section class="panel">
+            <div class="panel-head">
+              <div>
+                <h2>接口调用分布</h2>
+                <p>看哪些接口被调用得最多，方便判断业务热点和压力位置。</p>
+              </div>
+            </div>
+            <div class="admin-list" id="adminRequestBreakdown">
+              <div class="support-empty">等待加载接口分布。</div>
+            </div>
+          </section>
+
+          <section class="panel">
+            <div class="panel-head">
+              <div>
+                <h2>错误类型分布</h2>
+                <p>快速看到最常见的错误类型，优先处理最影响稳定性的部分。</p>
+              </div>
+            </div>
+            <div class="admin-list" id="adminErrorBreakdown">
+              <div class="support-empty">等待加载错误分布。</div>
+            </div>
+          </section>
+        </section>
+      </main>
+    </div>
+
+    <script src="/admin-monitor.js"></script>
+  </body>
+</html>

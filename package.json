@@ -1,0 +1,13 @@
+{
+  "name": "job-match-workbench",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Resume and JD matching workbench with DeepSeek-ready analysis.",
+  "scripts": {
+    "start": "node server/index.js",
+    "dev": "node server/index.js"
+  },
+  "engines": {
+    "node": ">=18"
+  }
+}

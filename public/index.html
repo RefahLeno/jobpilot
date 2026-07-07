@@ -1,0 +1,655 @@
+﻿<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>求职工作台</title>
+    <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
+    <link rel="stylesheet" href="/styles.css" />
+  </head>
+  <body>
+    <div id="app">
+      <header class="site-nav">
+        <a class="brand" href="#top" aria-label="求职工作台">
+          <span class="brand-mark">J</span>
+          <span>JobPilot</span>
+        </a>
+
+        <div class="nav-center">
+          <div class="mode-switch" role="tablist" aria-label="工作台模式">
+            <button class="mode-btn active" id="singleModeBtn" type="button">单 JD 匹配</button>
+            <button class="mode-btn" id="batchModeBtn" type="button">海投优化</button>
+          </div>
+        </div>
+
+        <div class="nav-actions">
+          <div id="modeActions" aria-label="当前模式快捷入口"></div>
+          <div class="auth-entry" id="authEntry">
+            <button class="nav-link-btn" id="openLoginBtn" type="button">登录</button>
+            <button class="nav-link-btn" id="openRegisterBtn" type="button">注册</button>
+          </div>
+        </div>
+      </header>
+
+      <section class="hero" id="top">
+        <div class="hero-copy">
+          <h1>把一份简历，拆成更适合投递的多个版本。</h1>
+          <p>
+            上传基础简历后，你可以做单个岗位匹配，也可以批量分析一组 JD。系统会提取关键词、判断匹配度、归类岗位方向，并给出对应的简历修改方案。          </p>
+          <div class="hero-actions">
+            <button class="primary-link" id="heroPrimaryBtn" type="button">开始使用</button>
+            <button class="ghost-link" id="heroSecondaryBtn" type="button">切到海投优化</button>
+          </div>
+          <div class="proof-row" aria-label="产品能力摘要">
+            <span>自动提取关键词</span>
+            <span>岗位方向分类</span>
+            <span>生成多版本简历</span>
+          </div>
+        </div>
+
+        <div class="hero-visual" aria-label="工作流预览">
+          <div class="hero-workflow-card" id="singlePreviewCard">
+            <div class="workflow-head">
+              <strong>单 JD 匹配</strong>
+              <span>适合精投</span>
+            </div>
+            <div class="preview-status-strip">
+              <div class="status-chip">
+                <b>简历</b>
+                <span>已解析</span>
+              </div>
+              <div class="status-chip">
+                <b>JD</b>
+                <span>待填写</span>
+              </div>
+              <div class="status-chip score">
+                <b>匹配分</b>
+                <span>-- / 100</span>
+              </div>
+            </div>
+            <div class="preview-board">
+              <div class="preview-column">
+                <div class="preview-stepper">
+                  <span class="live-step done">简历解析完成</span>
+                  <span class="live-step active">等待填写 JD</span>
+                  <span class="live-step">准备生成报告</span>
+                </div>
+                <div class="preview-block">
+                  <div class="preview-block-head">
+                    <strong>简历关键词</strong>
+                    <small>已抽取</small>
+                  </div>
+                  <div class="preview-chips">
+                    <span>产品规划</span>
+                    <span>数据分析</span>
+                    <span>SaaS</span>
+                    <span>跨团队协作</span>
+                  </div>
+                </div>
+                <div class="preview-block muted">
+                  <div class="preview-block-head">
+                    <strong>JD 需求焦点</strong>
+                    <small>待输入</small>
+                  </div>
+                  <div class="preview-lines">
+                    <i></i><i></i><i class="short"></i>
+                  </div>
+                </div>
+                <div class="preview-log">
+                  <div class="preview-log-row">
+                    <span>11:28</span>
+                    <b>已识别 4 个核心关键词</b>
+                  </div>
+                  <div class="preview-log-row">
+                    <span>11:29</span>
+                    <b>等待岗位要求输入</b>
+                  </div>
+                </div>
+              </div>
+              <div class="preview-score-panel">
+                <div class="mini-ring">
+                  <span>78</span>
+                  <small>预估</small>
+                </div>
+                <div class="score-status">
+                  <strong>可投，但建议先优化</strong>
+                  <p>重点补强行业背景和项目成果表达。</p>
+                </div>
+                <ul>
+                  <li>技能项匹配度较高</li>
+                  <li>行业背景需要补强表达</li>
+                  <li>建议先改项目成果描述</li>
+                </ul>
+              </div>
+            </div>
+            <div class="workflow-list">
+              <article class="workflow-item active">
+                <small>步骤 1</small>
+                <strong>上传基础简历</strong>
+                <p>支持 PDF / Word，自动提取文本、预览内容和关键词。</p>
+              </article>
+              <article class="workflow-item">
+                <small>步骤 2</small>
+                <strong>填写岗位 JD</strong>
+                <p>可直接粘贴内容，也可以从链接抓取岗位描述。</p>
+              </article>
+              <article class="workflow-item">
+                <small>步骤 3</small>
+                <strong>生成匹配报告</strong>
+                <p>输出分数、匹配点、欠缺点和下一步建议。</p>
+              </article>
+            </div>
+          </div>
+
+          <div class="hero-workflow-card hidden" id="batchPreviewCard">
+            <div class="workflow-head">
+              <strong>海投优化</strong>
+              <span>适合批量投递</span>
+            </div>
+            <div class="preview-status-strip">
+              <div class="status-chip">
+                <b>JD</b>
+                <span>12 条</span>
+              </div>
+              <div class="status-chip">
+                <b>方向</b>
+                <span>3 类</span>
+              </div>
+              <div class="status-chip score">
+                <b>简历版本</b>
+                <span>3 版</span>
+              </div>
+            </div>
+            <div class="cluster-preview-board">
+              <article class="cluster-preview-card strong">
+                <div>
+                  <strong>AI 产品经理版</strong>
+                  <small>覆盖 5 条 JD</small>
+                </div>
+                <span>82 分</span>
+              </article>
+              <article class="cluster-preview-card">
+                <div>
+                  <strong>内容产品经理版</strong>
+                  <small>覆盖 4 条 JD</small>
+                </div>
+                <span>74 分</span>
+              </article>
+              <article class="cluster-preview-card">
+                <div>
+                  <strong>策略产品经理版</strong>
+                  <small>覆盖 3 条 JD</small>
+                </div>
+                <span>69 分</span>
+              </article>
+            </div>
+            <div class="workflow-list">
+              <article class="workflow-item active">
+                <small>步骤 1</small>
+                <strong>批量导入 JD</strong>
+                <p>链接和文本都能导入，失败项可以手动补充。</p>
+              </article>
+              <article class="workflow-item">
+                <small>步骤 2</small>
+                <strong>自动岗位分类</strong>
+                <p>把一组相近 JD 聚成几个投递方向，便于集中改简历。</p>
+              </article>
+              <article class="workflow-item">
+                <small>步骤 3</small>
+                <strong>生成版本策略</strong>
+                <p>按方向输出不同版本的简历草稿与修改重点。</p>
+              </article>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section class="agent-strip" id="ai-agents">
+        <article>
+          <span>01</span>
+          <strong>解析简历</strong>
+          <p>识别简历文本、总结经历结构，并提取技能、行业和亮点关键词。</p>
+        </article>
+        <article>
+          <span>02</span>
+          <strong>解析 JD</strong>
+          <p>提取岗位职责、年限要求、硬技能、软技能和加分项。</p>
+        </article>
+        <article>
+          <span>03</span>
+          <strong>匹配评分</strong>
+          <p>结合关键词覆盖、语义相似和硬性条件，输出更可解释的分数。</p>
+        </article>
+        <article>
+          <span>04</span>
+          <strong>生成版本建议</strong>
+          <p>为不同岗位方向提供修改方案和简历草稿，不编造用户没有的经历。</p>
+        </article>
+      </section>
+
+      <section class="panel base-resume" id="workspace">
+        <div class="panel-head">
+          <div>
+            <h2>基础简历</h2>
+            <p>先上传一份你的基础简历。单 JD 模式会直接做匹配，海投模式会基于这份简历生成不同岗位方向的版本建议。</p>
+          </div>
+          <span class="step">01</span>
+        </div>
+        <div class="resume-grid">
+          <label class="upload-zone" id="uploadZone">
+            <input
+              id="resumeInput"
+              type="file"
+              accept=".pdf,.doc,.docx,application/pdf,application/msword,application/vnd.openxmlformats-officedocument.wordprocessingml.document"
+            />
+            <span class="upload-icon">→</span>
+            <strong>选择或拖入简历文件</strong>
+            <small>PDF 可原样预览，Word 会展示解析后的文本内容。</small>
+          </label>
+          <div>
+            <div class="doc-meta hidden" id="resumeMeta"></div>
+            <div class="status-note hidden" id="resumeStatusNote"></div>
+            <div class="keyword-block compact">
+              <div class="block-title">简历关键词</div>
+              <div class="chips" id="resumeKeywords"></div>
+              <div class="keyword-groups" id="resumeKeywordGroups"></div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section class="mode-context panel" id="modeContext">
+        <div class="mode-context-copy">
+          <strong id="modeContextTitle">当前是单 JD 匹配</strong>
+          <p id="modeContextText">适合判断某一个岗位值不值得投，差距在哪里，以及你的简历应该怎么改。</p>
+        </div>
+        <div class="mode-context-badge" id="modeContextBadge">精投</div>
+      </section>
+
+      <main id="singleMode" class="mode-page">
+        <section class="workspace">
+          <section class="panel resume-panel" id="resumePreviewSection">
+            <div class="panel-head">
+              <div>
+                <h2>简历预览</h2>
+                <p>上传后自动提取文本、展示摘要，并保留预览内容供你核对。</p>
+              </div>
+              <span class="step">02</span>
+            </div>
+            <div class="preview-shell">
+              <iframe id="pdfPreview" class="hidden" title="PDF 简历预览"></iframe>
+              <pre id="resumePreview" class="text-preview">简历内容会显示在这里。</pre>
+            </div>
+          </section>
+
+          <section class="panel jd-panel" id="jdSection">
+            <div class="panel-head">
+              <div>
+                <h2>岗位 JD</h2>
+                <p>支持从链接获取，也支持直接粘贴岗位描述。</p>
+              </div>
+              <span class="step">03</span>
+            </div>
+            <div class="input-row">
+              <input id="jdUrl" type="url" placeholder="粘贴 JD 链接，例如招聘网站岗位详情页" />
+              <button id="fetchJdBtn" class="secondary" type="button">获取</button>
+            </div>
+            <textarea id="jdText" placeholder="或直接粘贴 JD 内容：岗位职责、任职要求、加分项、年限要求等。"></textarea>
+            <div class="keyword-block">
+              <div class="block-title">JD 关键词</div>
+              <div class="chips" id="jdKeywords"></div>
+            </div>
+          </section>
+        </section>
+
+        <section class="match-panel" id="reportSection">
+          <div class="match-action">
+            <div>
+              <h2>匹配报告</h2>
+              <p>综合关键词覆盖、语义匹配和硬性条件，生成一份更容易理解和执行的投递建议。</p>
+            </div>
+            <div class="button-row action-row">
+              <button id="restoreReportBtn" class="secondary hidden" type="button">恢复上次报告</button>
+              <button id="analyzeBtn" type="button">生成匹配分</button>
+            </div>
+          </div>
+          <div class="status-note hidden" id="reportStatusNote"></div>
+          <div class="report-summary-band">
+            <article class="summary-focus-card">
+              <small>这份报告会回答</small>
+              <strong>这个岗位值不值得投，以及应该先改哪一块。</strong>
+              <p>分数只是起点，真正有价值的是匹配点、欠缺点和下一步动作建议。</p>
+            </article>
+            <div class="summary-stat-grid">
+              <article>
+                <small>判断维度</small>
+                <strong>8 项</strong>
+              </article>
+              <article>
+                <small>输出内容</small>
+                <strong>理由 + 建议</strong>
+              </article>
+              <article>
+                <small>适合场景</small>
+                <strong>精投前判断</strong>
+              </article>
+            </div>
+          </div>
+          <div class="result-grid">
+            <div class="report-hero-card">
+              <div class="report-hero-main">
+                <div class="report-priority-card">
+                  <small>现在最该改什么</small>
+                  <h3 id="reportHeadline">先上传简历并填写 JD。</h3>
+                  <p id="verdict">上传简历并填写 JD 后，点击生成匹配分。</p>
+                  <div class="priority-fix-list" id="topFixes"></div>
+                </div>
+                <div class="report-score-stack">
+                  <div class="score-card">
+                    <div class="score-ring"><span id="scoreValue">--</span><small>/100</small></div>
+                    <strong id="recommendation">等待分析</strong>
+                  </div>
+                  <div class="report-hero-copy">
+                    <small>投递风险</small>
+                    <div class="risk-row">
+                      <strong id="riskLevel">待评估</strong>
+                      <span class="risk-badge neutral" id="riskBadge">未分析</span>
+                    </div>
+                    <p id="weakDimensionText">完成分析后，这里会告诉你最需要优先补改的方向。</p>
+                  </div>
+                </div>
+              </div>
+              <div class="report-order-strip">
+                <span>1. 先看最该改什么</span>
+                <span>2. 再看差距来源</span>
+                <span>3. 最后按建议去改</span>
+              </div>
+            </div>
+            <div class="report-card guidance-card order-1">
+              <h3>优先补改项</h3>
+              <div class="guidance-metrics">
+                <article>
+                  <small>最低分维度</small>
+                  <strong id="weakDimensionLabel">待分析</strong>
+                </article>
+                <article>
+                  <small>欠缺点</small>
+                  <strong id="gapCount">0 项</strong>
+                </article>
+                <article>
+                  <small>已匹配</small>
+                  <strong id="strengthCount">0 项</strong>
+                </article>
+              </div>
+            </div>
+            <div class="dimension-card order-2">
+              <h3>为什么要先改</h3>
+              <div id="dimensions" class="dimensions"></div>
+            </div>
+            <div class="report-card order-3">
+              <h3>打分理由</h3>
+              <ul id="reasons"></ul>
+            </div>
+            <div class="report-card order-4">
+              <h3>匹配点</h3>
+              <div class="chips positive" id="matches"></div>
+            </div>
+            <div class="report-card gap-card order-5">
+              <h3>欠缺点</h3>
+              <div class="chips warning" id="gaps"></div>
+            </div>
+            <div class="report-card next-card action-card order-6">
+              <h3>具体怎么改</h3>
+              <ul id="nextSteps"></ul>
+            </div>
+            <div class="report-card evidence-card order-7">
+              <h3>评分依据片段</h3>
+              <div id="evidenceList" class="evidence-list">
+                <div class="support-empty">生成报告后，这里会展示用于打分的简历和 JD 片段。</div>
+              </div>
+            </div>
+          </div>
+        </section>
+      </main>
+
+      <main id="batchMode" class="mode-page hidden">
+        <section class="batch-grid">
+          <section class="panel batch-import" id="batchImportSection">
+            <div class="panel-head">
+              <div>
+                <h2>批量 JD 导入</h2>
+                <p>支持粘贴多条 JD 文本，也支持每行一个 JD 链接。建议单次分析 5–30 条 JD，分类结果会更清晰。</p>
+              </div>
+              <span class="step">02</span>
+            </div>
+            <div class="batch-setup-card" id="batchSetupCard">
+              <div class="batch-setup-head">
+                <strong>海投优化怎么用</strong>
+                <span id="batchSetupBadge">待开始</span>
+              </div>
+              <ol class="batch-setup-list" id="batchSetupList">
+                <li>先登录，保存你的海投批次和简历版本。</li>
+                <li>上传一份基础简历，后续版本会基于它生成。</li>
+                <li>粘贴多条 JD 或 JD 链接，再开始解析。</li>
+              </ol>
+              <p class="batch-setup-note" id="batchSetupNote">完成前两步后，海投优化才会真正跑起来。</p>
+            </div>
+            <textarea
+              id="batchText"
+              class="batch-textarea"
+              placeholder="粘贴多条 JD，每条之间用 --- 分隔。&#10;&#10;示例：&#10;岗位：AI 产品经理...&#10;---&#10;岗位：内容产品经理..."
+            ></textarea>
+            <textarea
+              id="batchUrls"
+              class="url-textarea"
+              placeholder="可选：每行一个 JD 链接，抓取失败后可在上方手动补充。"
+            ></textarea>
+            <div class="button-row">
+              <button id="loadSampleBatchBtn" class="secondary" type="button">填入示例</button>
+              <button id="parseBatchBtn" type="button">解析 JD</button>
+            </div>
+            <div class="status-note hidden" id="batchStatusNote"></div>
+          </section>
+
+          <section class="panel batch-list" id="batchListSection">
+            <div class="panel-head">
+              <div>
+                <h2>JD 列表</h2>
+                <p>解析后会展示标题、关键词和与基础简历的初步匹配分。</p>
+              </div>
+              <span class="counter" id="jdCounter">0 条</span>
+            </div>
+            <div id="jdList" class="jd-list empty-state">等待导入 JD。</div>
+            <div id="batchFailureList" class="failure-list hidden"></div>
+          </section>
+
+          <section class="panel cluster-panel" id="clusterSection">
+            <div class="panel-head">
+              <div>
+                <h2>岗位方向分类</h2>
+                <p>把相近 JD 聚成几个投递方向，帮助你决定该做哪几版简历。</p>
+              </div>
+              <button id="clusterBtn" class="secondary" type="button">生成分类</button>
+            </div>
+            <div id="clusterList" class="cluster-list empty-state">解析 JD 后生成岗位方向分类。</div>
+          </section>
+        </section>
+
+        <section class="match-panel" id="variants">
+          <div class="match-action">
+            <div>
+              <h2>多版本简历方案</h2>
+                <p>每个岗位方向生成一版结构化草稿，帮助你更快调整表达和投递策略。</p>
+            </div>
+            <div class="button-row action-row">
+              <button id="restoreBatchBtn" class="secondary hidden" type="button">恢复上次海投批次</button>
+              <button id="variantBtn" type="button">生成简历版本</button>
+            </div>
+          </div>
+          <div class="variant-summary-band">
+            <article class="summary-focus-card variant">
+              <small>这部分的重点</small>
+              <strong>不是多生成几版，而是让每一版都有明确投递对象。</strong>
+              <p>你会看到每个方向覆盖多少 JD、平均匹配分，以及这一版需要强化什么内容。</p>
+            </article>
+            <div class="variant-meta-grid">
+              <article>
+                <small>输出形式</small>
+                <strong>版本草稿</strong>
+              </article>
+              <article>
+                <small>策略范围</small>
+                <strong>关键词 + 项目改写</strong>
+              </article>
+              <article>
+                <small>真实性约束</small>
+                <strong>不编造经历</strong>
+              </article>
+            </div>
+          </div>
+          <section class="batch-dashboard" id="batchDashboard">
+            <article class="dashboard-hero-card" id="dashboardHeroCard">
+              <small>投递驾驶舱</small>
+              <strong id="dashboardHeadline">先完成岗位方向分类，再决定主推版本。</strong>
+              <p id="dashboardSummary">这里会汇总本批次最值得优先推进的方向、当前主推版本，以及最近导出动作，帮助你判断下一步先投哪一类岗位。</p>
+            </article>
+            <div class="dashboard-metrics">
+              <article class="dashboard-metric-card">
+                <small>当前主推版本</small>
+                <strong id="dashboardPrimaryVariant">待生成</strong>
+                <p id="dashboardPrimaryVariantNote">生成版本后可手动设为主推。</p>
+              </article>
+              <article class="dashboard-metric-card">
+                <small>建议优先方向</small>
+                <strong id="dashboardPriorityDirection">待分类</strong>
+                <p id="dashboardPriorityNote">会结合覆盖 JD 数和平均匹配分判断。</p>
+              </article>
+              <article class="dashboard-metric-card">
+                <small>主推覆盖范围</small>
+                <strong id="dashboardCoverage">0 条JD</strong>
+                <p id="dashboardCoverageNote">先导入并分类 JD，才能看到覆盖范围。</p>
+              </article>
+              <article class="dashboard-metric-card">
+                <small>最近导出</small>
+                <strong id="dashboardLastExport">暂无</strong>
+                <p id="dashboardLastExportNote">导出 Word 版本后，会在这里保留最近动作。</p>
+              </article>
+            </div>
+            <div class="delivery-cockpit">
+              <section class="cockpit-progress">
+                <div class="cockpit-head">
+                  <div>
+                    <h3>投递进度</h3>
+                    <p>先看这批岗位已经推进到哪一步，再决定接下来优先处理哪一版。</p>
+                  </div>
+                </div>
+                <div class="cockpit-progress-grid">
+                  <article class="cockpit-progress-card">
+                    <small>本批次 JD</small>
+                    <strong id="cockpitTotalJd">0</strong>
+                    <p id="cockpitTotalJdNote">待导入</p>
+                  </article>
+                  <article class="cockpit-progress-card">
+                    <small>已生成版本</small>
+                    <strong id="cockpitVariantCount">0</strong>
+                    <p id="cockpitVariantCountNote">待生成</p>
+                  </article>
+                  <article class="cockpit-progress-card">
+                    <small>已处理</small>
+                    <strong id="cockpitProcessedCount">0</strong>
+                    <p id="cockpitProcessedNote">以已导出为准</p>
+                  </article>
+                  <article class="cockpit-progress-card">
+                    <small>待处理</small>
+                    <strong id="cockpitPendingCount">0</strong>
+                    <p id="cockpitPendingNote">已生成但尚未导出</p>
+                  </article>
+                </div>
+              </section>
+              <section class="cockpit-directions">
+                <div class="cockpit-head">
+                  <div>
+                    <h3>方向优先级</h3>
+                    <p>把每个方向的覆盖范围、当前版本和处理状态放在一起看。</p>
+                  </div>
+                </div>
+                <div id="cockpitDirectionList" class="cockpit-direction-list"></div>
+              </section>
+              <section class="cockpit-actions">
+                <div class="cockpit-head">
+                  <div>
+                    <h3>快捷动作</h3>
+                    <p>不用来回找入口，直接从这里继续推进本批次。</p>
+                  </div>
+                </div>
+                <div class="cockpit-action-buttons">
+                  <button id="cockpitOpenBatchDetail" class="secondary" type="button">打开批次详情</button>
+                  <button id="cockpitJumpPrimary" class="secondary" type="button">定位主推版本</button>
+                  <button id="cockpitJumpVariants" class="secondary" type="button">查看全部版本</button>
+                </div>
+                <div class="cockpit-action-note" id="cockpitActionNote">生成版本后，这里会提示你优先推进哪一版。</div>
+              </section>
+            </div>
+          </section>
+          <div class="variant-table-wrap" id="variantSection">
+            <table class="variant-table">
+              <thead>
+                <tr>
+                  <th>版本名称</th>
+                  <th>目标方向</th>
+                  <th>覆盖 JD</th>
+                  <th>平均分</th>
+                  <th>核心关键词</th>
+                  <th>改写重点</th>
+                  <th>风险提示</th>
+                  <th>操作</th>
+                </tr>
+              </thead>
+              <tbody id="variantRows">
+                <tr><td colspan="8" class="table-empty">等待生成简历版本。</td></tr>
+              </tbody>
+            </table>
+          </div>
+          <div id="variantDetails" class="variant-details"></div>
+        </section>
+      </main>
+    </div>
+
+    <div class="auth-modal hidden" id="authModal" aria-hidden="true">
+      <div class="auth-backdrop" id="authBackdrop"></div>
+      <section class="auth-dialog" role="dialog" aria-modal="true" aria-labelledby="authTitle">
+        <div class="auth-dialog-head">
+          <div>
+            <small id="authEyebrow">账号入口</small>
+            <h2 id="authTitle">登录后继续</h2>
+            <p id="authSubtitle">登录后，你的简历、报告、海投批次和版本都会只归你自己查看。</p>
+          </div>
+          <button class="auth-close" id="closeAuthBtn" type="button" aria-label="关闭">×</button>
+        </div>
+        <div class="status-note hidden" id="authStatusNote"></div>
+        <form class="auth-form" id="authForm">
+          <label>
+            <span>邮箱</span>
+            <input id="authEmail" name="email" type="email" placeholder="you@example.com" autocomplete="email" />
+          </label>
+          <label>
+            <span>密码</span>
+            <input id="authPassword" name="password" type="password" placeholder="至少 8 位" autocomplete="current-password" />
+          </label>
+          <button id="authSubmitBtn" type="submit">继续</button>
+        </form>
+        <div class="auth-quota-panel hidden" id="authQuotaPanel"></div>
+        <div class="auth-switch-row">
+          <span id="authSwitchText">还没有账号？</span>
+          <button class="inline-switch" id="authSwitchBtn" type="button">去注册</button>
+        </div>
+      </section>
+    </div>
+
+    <div class="toast hidden" id="toast"></div>
+    <script src="/app.js"></script>
+  </body>
+</html>
+
+
+
