@@ -53,7 +53,7 @@ const PYTHON_BINS = Array.from(new Set([
   process.platform === "win32" ? "python" : "python3",
 ].filter(Boolean)));
 const PYTHON_PACKAGE_DIR = process.env.PYTHONPATH || (fs.existsSync(CODEX_RUNTIME_PYTHON_DIR) ? CODEX_RUNTIME_PYTHON_DIR : "");
-const DEEPSEEK_MODEL = process.env.DEEPSEEK_MODEL || "deepseek-v4-flash";
+const DEEPSEEK_MODEL = process.env.DEEPSEEK_MODEL || "deepseek-chat";
 const DEEPSEEK_API_URL = process.env.DEEPSEEK_API_URL || "https://api.deepseek.com/chat/completions";
 const DEEPSEEK_PROXY_URL = process.env.DEEPSEEK_PROXY_URL || process.env.HTTPS_PROXY || process.env.HTTP_PROXY || process.env.ALL_PROXY || "";
 const TAVILY_API_KEY = process.env.TAVILY_API_KEY || "";
@@ -116,7 +116,11 @@ const jdSignalCatalog = [
   "学习能力", "沟通能力", "团队协作", "责任心", "自我驱动", "项目跟进",
   "跨部门协作", "研发协作", "设计协作", "运营协作", "项目交付", "产品上线",
   "运营工作", "用户活跃度", "留存率", "转化率", "关键指标", "数据监控",
-  "数据跟踪", "产品优化", "产品策略", "市场动态"
+  "数据跟踪", "产品优化", "产品策略", "市场动态", "小红书", "内容运营",
+  "社区运营", "内容选题", "趋势运营", "教程教学", "决策内容", "有用内容",
+  "热点洞察", "用户情绪", "内容趋势", "范式破圈", "笔记选题", "选题文案",
+  "物料对接", "文案功底", "内容敏感性", "社区内容平台", "内容平台",
+  "每周到岗5天", "实习3个月以上", "尽快到岗", "92/QS100", "985/211"
 ];
 
 const jdSignalLower = jdSignalCatalog.map((item) => ({ original: item, lower: item.toLowerCase() }));
@@ -136,6 +140,16 @@ const jdDerivedSignals = [
   ["产品优化", /产品优化|优化建议|持续优化/],
   ["产品上线", /产品上线|上线后的运营/],
   ["互联网产品实习", /互联网产品实习|产品实习/],
+  ["小红书", /小红书|RED|Xiaohongshu/i],
+  ["内容运营", /内容运营|社区运营|趋势运营|内容选题|选题活动/],
+  ["有用内容", /有用向内容|有用方向内容|有用教程|教程教学|决策等有用/],
+  ["内容热点", /内容热点|热点敏感|热点洞察/],
+  ["用户洞察", /用户需求|用户的需求|用户情绪|需求与情绪/],
+  ["笔记选题", /笔记选题|选题文案|文案功底/],
+  ["审美能力", /审美好|审美能力|物料整体/],
+  ["内容敏感性", /内容敏感性|内容敏感/],
+  ["实习到岗", /每周到岗\s*5\s*天|实习时间\s*3\s*个月以上|尽快到岗|充足实习时间/],
+  ["92/QS100", /92\s*\/\s*QS\s*100|本硕至少一学历92|QS100|985|211/],
 ];
 
 const stopWords = new Set([
@@ -911,7 +925,7 @@ function topTerms(text, max = 18) {
 function isNoisyJdTerm(term) {
   const value = String(term || "").trim();
   if (!value || value.length < 2) return true;
-  if (value.length > 12 && !/互联网产品实习|跨部门协作|产品开发流程/.test(value)) return true;
+  if (value.length > 14 && !/互联网产品实习|跨部门协作|产品开发流程|社区内容平台|实习3个月以上|每周到岗5天|有用方向内容/.test(value)) return true;
   if (/者优先|熟练使用|参与过|具备一定|有一定|能够|负责|协助|相关项目|办公软件|进行测试|进行分析|深入的理解/.test(value)) return true;
   if (/^(职位要求|任职要求|经验要求|技能要求|能力与素质|职位描述|岗位职责|教育背景)$/.test(value)) return true;
   if (/^(产品|用户|数据|能力|要求|优先|熟悉|使用|相关|项目|工作|功能|特点)$/.test(value)) return true;
@@ -935,7 +949,7 @@ function topJdTerms(text, max = 18) {
     .map((item) => item.trim())
     .filter((item) => item.length >= 2 && item.length <= 8 && !isNoisyJdTerm(item));
   for (const item of shortCandidates) {
-    if (/产品|数据|用户|需求|交互|竞品|原型|文档|协作|指标|留存|转化|社交|职场|人脉|市场|测试|体验/.test(item)) {
+    if (/产品|数据|用户|需求|交互|竞品|原型|文档|协作|指标|留存|转化|社交|职场|人脉|市场|测试|体验|内容|运营|选题|文案|审美|小红书|社区|教程|热点|趋势|情绪|物料|实习|到岗|学历/.test(item)) {
       scores.set(item, (scores.get(item) || 0) + 2);
     }
   }
@@ -1410,6 +1424,80 @@ function inferHighlights(text, type) {
   if (!result.length) result.push(type === "resume" ? "建议补充量化结果和项目影响。" : "建议明确技能、年限和行业要求。");
   return result;
 }
+
+function extractJdSections(text) {
+  const lines = normalizeText(text).split("\n").map((line) => line.trim()).filter(Boolean);
+  const responsibilities = [];
+  const requirements = [];
+  let current = "";
+  for (const line of lines) {
+    if (/^(工作职责|岗位职责|职位描述|工作内容)[:：]?$/.test(line)) {
+      current = "responsibilities";
+      continue;
+    }
+    if (/^(岗位要求|任职要求|职位要求|能力要求)[:：]?$/.test(line)) {
+      current = "requirements";
+      continue;
+    }
+    if (/投递邮箱|简历投递|邮箱/.test(line)) continue;
+    if (current === "responsibilities") responsibilities.push(line);
+    else if (current === "requirements") requirements.push(line);
+  }
+  return {
+    responsibilities: responsibilities.join("；").slice(0, 320),
+    requirements: requirements.join("；").slice(0, 320),
+  };
+}
+
+inferTitle = function inferTitleImproved(text, index = 1) {
+  const lines = normalizeText(text).split("\n").map((line) => line.trim()).filter(Boolean);
+  const firstUseful = lines.find((line) => /经理|产品|运营|实习|内容|增长|数据|AI|岗位|职位|JD|intern|operation|product/i.test(line)) || lines[0] || "";
+  const match = firstUseful.match(/(?:岗位|职位|名称|title)[:：\s]*([^。；;\n]{2,40})/i);
+  return (match?.[1] || firstUseful || `JD ${index}`).replace(/^[-#\d.\s]+/, "").slice(0, 40);
+};
+
+inferTags = function inferTagsImproved(text) {
+  const t = String(text);
+  const tags = [];
+  const rules = [
+    ["AI 产品", /AI|AIGC|LLM|Agent|Prompt|model|NLP/i],
+    ["内容运营", /内容运营|社区运营|内容选题|教程|笔记|小红书|content|community|CMS|SEO|editor/i],
+    ["策略产品", /策略|市场|定价|规划|商业|strategy|market|pricing|planning|business/i],
+    ["增长产品", /增长|转化|留存|A\/B|实验|growth|conversion|retention|experiment/i],
+    ["数据产品", /数据|BI|指标|报表|看板|data|metric|report|dashboard|warehouse/i],
+    ["B 端产品", /SaaS|CRM|ERP|企业|平台|enterprise|platform/i],
+    ["C 端产品", /用户|消费者|会员|社交|社区|consumer|app|member|social/i],
+  ];
+  for (const [label, regex] of rules) if (regex.test(t)) tags.push(label);
+  return tags.length ? tags : ["通用岗位"];
+};
+
+summarize = function summarizeImproved(text, type) {
+  const lines = normalizeText(text).split("\n").map((line) => line.trim()).filter(Boolean);
+  const keywords = type === "jd" ? topJdTerms(text, 16) : topTerms(text, 16);
+  const jdSections = type === "jd" ? extractJdSections(text) : null;
+  const yearMatch = String(text).match(/(\d+)\s*(?:years?|年)/i);
+  const education = /博士|PhD/i.test(text) ? "博士"
+    : /硕士|Master/i.test(text) ? "硕士"
+      : /本科|Bachelor/i.test(text) ? "本科"
+        : /大专|College/i.test(text) ? "大专"
+          : /92\s*\/\s*QS\s*100|985|211|本硕至少一学历92/i.test(text) ? "92/QS100 优先"
+            : "未明确";
+  return {
+    title: type === "resume" ? "简历摘要" : "JD 摘要",
+    overview: type === "jd"
+      ? [inferTitle(text), jdSections?.responsibilities || "", jdSections?.requirements || ""].filter(Boolean).join("；").slice(0, 260)
+      : lines.slice(0, 3).join("；").slice(0, 260) || "内容较短，暂无法生成完整摘要。",
+    years: yearMatch ? `${yearMatch[1]} 年相关经历` : "未明确",
+    education,
+    highlights: keywords.slice(0, 8),
+    sections: [
+      { label: type === "resume" ? "核心背景" : "岗位职责", value: type === "jd" ? (jdSections?.responsibilities || lines.slice(0, 4).join("；").slice(0, 300)) : lines.slice(0, 4).join("；").slice(0, 300) },
+      { label: type === "resume" ? "技能与经历" : "任职要求", value: type === "jd" ? (jdSections?.requirements || keywords.slice(0, 10).join("、") || "待补充") : keywords.slice(0, 10).join("、") || "待补充" },
+      { label: type === "resume" ? "亮点" : "加分方向", value: inferHighlights(text, type).join("；") },
+    ],
+  };
+};
 
 function createResumeRecord(payload) {
   return createRecord("resumes", payload, "resume");
@@ -2367,6 +2455,10 @@ async function handleAnalyzeSecure(req, res) {
       ],
     });
     if (deepseek) analysis = { ...local, ...deepseek, provider: "deepseek", cacheStats: retrieval.cacheStats };
+    else {
+      analysis.fallbackReason = "DeepSeek API Key 未配置，已使用本地规则生成结果。";
+      message = "DeepSeek API Key 未配置，已使用本地规则生成结果。";
+    }
   } catch (error) {
     logErrorEvent("deepseek.single_analysis_failed", {
       userId: current.user.id,
