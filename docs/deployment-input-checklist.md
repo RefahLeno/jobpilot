@@ -1,57 +1,45 @@
-# 外网部署前准备清单
+# 外网上线检查清单
 
-在我继续带你把 JobPilot 真正部署到外网之前，你需要准备下面这些信息。
+JobPilot 当前已采用 Railway 部署，并通过腾讯云 DNSPod 绑定自定义域名。
 
-## 1. GitHub 仓库
+## 已完成
 
-- 仓库地址  
-  现在是：`https://github.com/RefahLeno/jobpilot.git`
-- 当前代码是否已经推送到 GitHub
+- GitHub 仓库已建立：`https://github.com/RefahLeno/jobpilot`
+- Railway 项目已部署成功
+- Railway 临时域名可访问
+- 自定义域名已绑定：`https://job.weng1013.cn`
+- DNSPod 已配置 Railway 要求的 CNAME 和 TXT 记录
+- Dockerfile 构建已替代 Nixpacks 自动构建
 
-## 2. 腾讯云服务器
+## Railway 环境变量
 
-- 服务器公网 IP  
-  这个是现在最缺的关键信息
-- 服务器系统版本  
-  推荐：`Ubuntu 22.04`
-- 登录用户名  
-  例如：`ubuntu`
-- 是否已开放端口：
-  - `80`
-  - `443`
+生产环境至少需要：
 
-## 3. 域名
+```text
+NODE_ENV=production
+COOKIE_SECURE=true
+DEEPSEEK_API_KEY=your_deepseek_api_key
+DEEPSEEK_MODEL=deepseek-chat
+ADMIN_EMAILS=your_admin_email@example.com
+PYTHON_BIN=/opt/venv/bin/python
+```
 
-- 正式域名：`weng1013.cn`
-- 你是否决定直接用主域名上线
-  - 主域名方案：`https://weng1013.cn`
-  - 子域名方案：`https://job.weng1013.cn`
-- 该域名或子域名是否已经做了 `A` 记录解析到服务器公网 IP
+## 上线验收
 
-## 4. DeepSeek
+- 访问 `https://job.weng1013.cn`
+- 注册 / 登录
+- 上传 PDF / Word 简历
+- 粘贴 JD 生成单 JD 分析
+- 批量导入 JD 并分类
+- 生成简历版本建议
+- 导出 Word 文件
+- 手机微信内打开链接
 
-- 新的 `DEEPSEEK_API_KEY`
-- 模型默认使用：
-  - `deepseek-v4-flash`
+## 后续优先事项
 
-说明：
+1. 小范围内测，收集真实用户反馈。
+2. 统计单次分析耗时、AI 成功率、导出成功率。
+3. 将 JSON 文件存储迁移到 PostgreSQL。
+4. 增加密码找回和用量保护。
+5. 根据反馈优化简历解析、JD 抓取和报告结构。
 
-- 你之前在对话里发过一次 key
-- 正式上线前建议把旧 key 作废，重新生成一个新 key
-
-## 5. 管理员账号
-
-- 管理员邮箱：`1305813360@qq.com`
-- 这个邮箱会写入：
-  - `ADMIN_EMAILS`
-
-## 6. 我下一步会继续做什么
-
-当你把上面的信息准备好后，我可以继续帮你推进这些动作：
-
-1. 核对仓库是否适合上线
-2. 生成服务器可直接执行的部署命令
-3. 帮你核对域名解析是否正确
-4. 帮你生成正式 `.env`
-5. 帮你把 `Nginx + systemd + HTTPS` 跑通
-6. 最后确认公网链接可以访问

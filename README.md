@@ -1,53 +1,82 @@
 # JobPilot 求职工作台
 
-JobPilot 是一个面向求职者的 Web 工作台。
+JobPilot 是一个面向求职者的 AI 求职工作台，帮助用户把简历和岗位 JD 放在一起分析，判断岗位匹配度、定位简历缺口，并生成针对性的优化建议。
 
-用户上传基础简历后，可以做两类分析：
+当前项目已完成 MVP 上线闭环：
 
-- `单 JD 匹配`：判断当前岗位值不值得投、差距在哪里、下一步怎么改
-- `海投优化`：批量导入 JD，自动归类岗位方向，并生成多版本简历建议
+- 线上访问地址：`https://job.weng1013.cn`
+- GitHub 仓库：`https://github.com/RefahLeno/jobpilot`
+- 部署平台：Railway
+- 域名解析：腾讯云 DNSPod
 
-当前仓库已经具备内测版主流程，可以作为对外试用版本继续部署上线。
+## 核心能力
 
-## 当前能力
-
-- PDF / Word 简历上传
-- PDF 原样预览、Word 文本预览
-- 简历关键词和结构化摘要
-- 单 JD 粘贴 / 链接抓取
+- 账号注册 / 登录
+- PDF / Word 简历上传与文本解析
+- 简历关键词、摘要与结构化信息提取
+- 单 JD 粘贴或链接抓取
 - 单 JD 匹配评分报告
-- 海投模式批量 JD 导入
-- JD 聚类与岗位方向分类
-- 多版本简历建议与草稿
-- Word 导出
-- 登录 / 历史记录 / 管理员监控
+- 批量 JD 导入与岗位方向分类
+- 多版本简历建议与草稿生成
+- Word 简历导出
+- 历史记录、版本管理与管理员监控
+
+## 产品链路
+
+### 单 JD 精投
+
+```text
+上传简历 -> 粘贴/抓取 JD -> 匹配评分 -> 缺口分析 -> 优化建议 -> 导出结果
+```
+
+适合判断某一个岗位是否值得投递，以及应该如何针对性修改简历。
+
+### 批量海投优化
+
+```text
+上传基础简历 -> 批量导入 JD -> 岗位方向分类 -> 生成多版本简历建议 -> 导出版本
+```
+
+适合同时投递多个相近岗位时，拆出不同方向的简历版本。
+
+## 技术方案
+
+- 前端：原生 HTML / CSS / JavaScript
+- 后端：Node.js HTTP 服务
+- 文件解析：Python 脚本
+  - PDF：`pdfminer.six`
+  - Word：`python-docx`
+- AI 分析：DeepSeek API
+- 兜底策略：本地规则、关键词匹配、向量/规则证据片段
+- 数据存储：本地 JSON 文件，位于 `work/data`
+- 部署：Dockerfile + Railway
+- 自定义域名：`job.weng1013.cn`
 
 ## 本地启动
 
-### 1. 运行环境
-
-- Node.js `18+`
-- Python `3.11+`
-
-### 2. 安装 Python 依赖
+### 1. 安装依赖
 
 ```bash
+npm install
 python -m pip install -r requirements.txt
 ```
 
-### 3. 设置环境变量
+### 2. 配置环境变量
 
-参考 [`.env.example`](C:/Users/13058/Documents/Codex/2026-06-25/1-word-pdf-2-3-d/.env.example)：
+复制 `.env.example` 为 `.env.local`，至少配置：
 
 ```text
 PORT=4173
+NODE_ENV=development
 DEEPSEEK_API_KEY=your_deepseek_api_key
-DEEPSEEK_MODEL=deepseek-v4-flash
-ADMIN_EMAILS=1305813360@qq.com
-PYTHON_BIN=python3
+DEEPSEEK_MODEL=deepseek-chat
+ADMIN_EMAILS=your_admin_email@example.com
+PYTHON_BIN=python
 ```
 
-### 4. 启动服务
+如果不配置 `DEEPSEEK_API_KEY`，系统会使用本地规则生成兜底分析结果。
+
+### 3. 启动服务
 
 ```bash
 npm start
@@ -59,53 +88,56 @@ npm start
 http://localhost:4173
 ```
 
-## DeepSeek 接入
+## Railway 部署
 
-如果没有配置 `DEEPSEEK_API_KEY`，系统会使用本地 fallback 逻辑完成关键词提取、聚类和评分流程，方便本地演示。
+项目已包含 Railway 部署配置：
 
-配置完成后：
+- `Dockerfile`
+- `.dockerignore`
+- `railway.json`
 
-- 单 JD 匹配结果优先走 DeepSeek
-- DeepSeek 不可用时回退到本地逻辑
-- 前端会显示当前结果来源
+Railway 会使用 Dockerfile 构建镜像，安装 Node.js、Python、pip 和 `requirements.txt` 中的 Python 依赖。
 
-推荐模型：
-
-```text
-deepseek-v4-flash
-```
-
-## 生产部署
-
-推荐部署形态：
-
-- 腾讯云轻量应用服务器
-- Ubuntu 22.04
-- Nginx
-- Node.js 单服务
-- Python 辅助脚本
-- 腾讯云域名解析
-- Let's Encrypt HTTPS
-
-当前默认主域名方案：
+Railway 生产环境建议配置：
 
 ```text
-https://weng1013.cn
+NODE_ENV=production
+COOKIE_SECURE=true
+DEEPSEEK_API_KEY=your_deepseek_api_key
+DEEPSEEK_MODEL=deepseek-chat
+ADMIN_EMAILS=your_admin_email@example.com
+PYTHON_BIN=/opt/venv/bin/python
 ```
 
-部署材料已放在 `deploy/` 和 `docs/`：
+部署后绑定自定义域名：
 
-- [deploy/install-server.sh](C:/Users/13058/Documents/Codex/2026-06-25/1-word-pdf-2-3-d/deploy/install-server.sh)
-- [deploy/jobpilot.service](C:/Users/13058/Documents/Codex/2026-06-25/1-word-pdf-2-3-d/deploy/jobpilot.service)
-- [deploy/nginx.jobpilot.conf](C:/Users/13058/Documents/Codex/2026-06-25/1-word-pdf-2-3-d/deploy/nginx.jobpilot.conf)
-- [deploy/backup-work.sh](C:/Users/13058/Documents/Codex/2026-06-25/1-word-pdf-2-3-d/deploy/backup-work.sh)
-- [docs/tencent-cloud-launch.md](C:/Users/13058/Documents/Codex/2026-06-25/1-word-pdf-2-3-d/docs/tencent-cloud-launch.md)
-- [docs/deployment-input-checklist.md](C:/Users/13058/Documents/Codex/2026-06-25/1-word-pdf-2-3-d/docs/deployment-input-checklist.md)
+```text
+job.weng1013.cn
+```
 
-## 重要说明
+DNSPod 中按 Railway 提供的记录配置：
 
-- 当前默认数据存储仍为本地 JSON，适合内测版，不适合长期高并发正式运营
-- 扫描版 PDF 暂不支持 OCR
-- `.doc` 文件会尽量解析，但正式建议使用 `.docx`
-- JD 链接抓取可能被目标网站登录、反爬或动态渲染拦截，失败时请手动粘贴
-- 第一版正式承诺的是 Web 使用体验和 Word 导出
+- `CNAME job -> <railway-domain>.up.railway.app`
+- `TXT _railway-verify.job -> railway-verify=<value>`
+
+详细步骤见 [docs/railway-deployment.md](C:/Users/13058/Documents/jobpilot/docs/railway-deployment.md)。
+
+## 当前版本边界
+
+- 当前数据默认保存在 Railway 容器文件系统的 JSON 文件中，适合 MVP 内测，不适合作为长期高并发生产数据方案。
+- Railway 重新部署或容器重建后，本地文件型数据可能存在丢失风险；后续建议迁移到 PostgreSQL。
+- 扫描版 PDF 暂不保证 OCR 识别效果。
+- JD 链接抓取可能被目标网站登录、反爬或动态渲染拦截，失败时请手动粘贴 JD 文本。
+- DeepSeek 不可用时，系统会自动切换为本地规则兜底结果。
+
+## 上线验收清单
+
+- 首页可以通过 `https://job.weng1013.cn` 打开
+- 注册 / 登录可用
+- PDF / Word 简历上传可用
+- 单 JD 分析可用
+- 批量 JD 导入和分类可用
+- Word 导出可下载
+- DeepSeek 联调正常
+- 手机微信内打开链接正常
+
