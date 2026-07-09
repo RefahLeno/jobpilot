@@ -7,6 +7,17 @@ const path = require("path");
 const crypto = require("crypto");
 const { spawn } = require("child_process");
 const { createRecord, updateRecord, getRecord, listRecords, findRecords, deleteRecord, readCollection, writeCollection, nowIso } = require("./store");
+const {
+  initAuthStore,
+  isPostgresAuthEnabled,
+  getUserByIdSync,
+  getUsersByEmailSync,
+  getSessionByTokenSync,
+  createUser: createPostgresUser,
+  createSession: createPostgresSession,
+  deleteSession: deletePostgresSession,
+  incrementUserQuota: incrementPostgresUserQuota,
+} = require("./auth_store");
 
 function loadEnvFile(filePath) {
   if (!fs.existsSync(filePath)) return;
@@ -557,10 +568,12 @@ function verifyPassword(password, storedHash) {
 }
 
 function createUserRecord(payload) {
+  if (isPostgresAuthEnabled()) return createPostgresUser(payload);
   return createRecord("users", payload, "user");
 }
 
 function createSessionRecord(payload) {
+  if (isPostgresAuthEnabled()) return createPostgresSession(payload);
   return createRecord("sessions", payload, "session");
 }
 
@@ -571,6 +584,7 @@ function getUserByEmail(email) {
 function getUsersByEmail(email) {
   const normalizedEmail = normalizeEmail(email);
   if (!normalizedEmail) return [];
+  if (isPostgresAuthEnabled()) return getUsersByEmailSync(normalizedEmail);
   return findRecords("users", (item) =>
     item.status !== "deleted" && normalizeEmail(item.email) === normalizedEmail
   );
@@ -582,11 +596,14 @@ function getUserByEmailAndPassword(email, password) {
 
 function getSessionByToken(token) {
   if (!token) return null;
-  const session = findRecords("sessions", (item) => item.token === token, 1)[0] || null;
+  const session = isPostgresAuthEnabled()
+    ? getSessionByTokenSync(token)
+    : findRecords("sessions", (item) => item.token === token, 1)[0] || null;
   if (!session) return null;
   const expiresAt = new Date(session.expiresAt || 0).getTime();
   if (!expiresAt || expiresAt <= Date.now()) {
-    deleteRecord("sessions", session.id);
+    if (isPostgresAuthEnabled()) deletePostgresSession(session.id).catch(() => {});
+    else deleteRecord("sessions", session.id);
     return null;
   }
   return session;
@@ -597,7 +614,7 @@ function getCurrentUser(req) {
   const token = cookies[SESSION_COOKIE];
   const session = getSessionByToken(token);
   if (!session) return null;
-  const user = getRecord("users", session.userId);
+  const user = isPostgresAuthEnabled() ? getUserByIdSync(session.userId) : getRecord("users", session.userId);
   if (!user || user.status === "deleted") return null;
   return { user, session };
 }
@@ -619,6 +636,13 @@ function requireAdmin(req, res) {
     return null;
   }
   return current;
+}
+
+async function incrementUserQuotaUsage(userId, key) {
+  if (isPostgresAuthEnabled()) return await incrementPostgresUserQuota(userId, key);
+  return updateRecord("users", userId, (user) => ({
+    quota: { ...(user.quota || {}), [key]: Number(user.quota?.[key] || 0) + 1 },
+  }));
 }
 
 function assertOwnership(res, record, userId, type = "record") {
@@ -2177,7 +2201,7 @@ async function handleRegister(req, res) {
     logErrorEvent("auth.register.email_taken", { email: normalizedEmail, errorCode: "email_taken" });
     return sendError(res, 409, "This email is already registered.", null, "email_taken");
   }
-  const user = createUserRecord({
+  const user = await createUserRecord({
     email: normalizedEmail,
     emailNormalized: normalizedEmail,
     passwordHash: hashPassword(password),
@@ -2190,7 +2214,7 @@ async function handleRegister(req, res) {
     quotaResetAt: nowIso(),
   });
   const token = crypto.randomBytes(32).toString("hex");
-  createSessionRecord({
+  await createSessionRecord({
     userId: user.id,
     token,
     expiresAt: new Date(Date.now() + SESSION_MAX_AGE_MS).toISOString(),
@@ -2207,7 +2231,7 @@ async function handleLogin(req, res) {
     return sendError(res, 401, "Email or password is incorrect.", null, "invalid_credentials");
   }
   const token = crypto.randomBytes(32).toString("hex");
-  createSessionRecord({
+  await createSessionRecord({
     userId: user.id,
     token,
     expiresAt: new Date(Date.now() + SESSION_MAX_AGE_MS).toISOString(),
@@ -2221,7 +2245,10 @@ async function handleLogout(req, res) {
   const token = cookies[SESSION_COOKIE];
   if (token) {
     const session = getSessionByToken(token);
-    if (session) deleteRecord("sessions", session.id);
+    if (session) {
+      if (isPostgresAuthEnabled()) await deletePostgresSession(session.id);
+      else deleteRecord("sessions", session.id);
+    }
   }
   clearSessionCookie(res);
   sendSuccess(res, 200, { message: "Logged out." });
@@ -2598,9 +2625,7 @@ async function handleAnalyzeSecure(req, res) {
     cacheStats: retrieval.cacheStats,
   }, current.user.id));
 
-  updateRecord("users", current.user.id, (user) => ({
-    quota: { ...(user.quota || {}), singleAnalysisUsed: Number(user.quota?.singleAnalysisUsed || 0) + 1 },
-  }));
+  await incrementUserQuotaUsage(current.user.id, "singleAnalysisUsed");
 
   logAiMetric("analysis.completed", {
     userId: current.user.id,
@@ -2695,9 +2720,7 @@ async function handleBatchJdsSecure(req, res) {
     status: failures.length ? "partial_success" : "success",
   }, current.user.id));
 
-  updateRecord("users", current.user.id, (user) => ({
-    quota: { ...(user.quota || {}), batchRunsUsed: Number(user.quota?.batchRunsUsed || 0) + 1 },
-  }));
+  await incrementUserQuotaUsage(current.user.id, "batchRunsUsed");
 
   sendSuccess(res, 200, {
     message: failures.length
@@ -2880,9 +2903,7 @@ async function handleExportResumeSecure(req, res) {
         exportHistory: history.slice(0, 10),
       });
     }
-    updateRecord("users", current.user.id, (user) => ({
-      quota: { ...(user.quota || {}), exportsUsed: Number(user.quota?.exportsUsed || 0) + 1 },
-    }));
+    await incrementUserQuotaUsage(current.user.id, "exportsUsed");
     logUserEvent("resume.exported", {
       userId: current.user.id,
       variantId: variant?.id || "",
@@ -3156,10 +3177,22 @@ const server = http.createServer(async (req, res) => {
   }
 });
 
-server.listen(PORT, () => {
-  console.log(`Job Match Workbench running at http://localhost:${PORT}`);
-  console.log(`DeepSeek: ${process.env.DEEPSEEK_API_KEY ? `enabled (${DEEPSEEK_MODEL})` : "not configured, using local fallback"}`);
-});
+async function startServer() {
+  try {
+    const authUsesPostgres = await initAuthStore();
+    console.log(`Auth store: ${authUsesPostgres ? "PostgreSQL" : "local JSON fallback"}`);
+  } catch (error) {
+    console.error(`Auth store initialization failed: ${error.message}`);
+    process.exit(1);
+  }
+
+  server.listen(PORT, () => {
+    console.log(`Job Match Workbench running at http://localhost:${PORT}`);
+    console.log(`DeepSeek: ${process.env.DEEPSEEK_API_KEY ? `enabled (${DEEPSEEK_MODEL})` : "not configured, using local fallback"}`);
+  });
+}
+
+startServer();
 
 
 
