@@ -7,7 +7,7 @@ ENV PYTHON_BIN=/opt/venv/bin/python
 ENV PATH="/opt/venv/bin:${PATH}"
 
 RUN apt-get update \
-  && apt-get install -y --no-install-recommends python3 python3-venv \
+  && apt-get install -y --no-install-recommends python3 python3-venv tesseract-ocr tesseract-ocr-chi-sim tesseract-ocr-eng \
   && rm -rf /var/lib/apt/lists/*
 
 COPY package.json ./

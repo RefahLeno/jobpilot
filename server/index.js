@@ -60,6 +60,7 @@ const TAVILY_API_KEY = process.env.TAVILY_API_KEY || "";
 const OCR_PROVIDER = process.env.OCR_PROVIDER || "";
 const OCR_API_URL = process.env.OCR_API_URL || "";
 const OCR_API_KEY = process.env.OCR_API_KEY || "";
+const IMAGE_OCR_EXTENSIONS = new Set([".png", ".jpg", ".jpeg", ".webp"]);
 const EMBEDDING_API_URL = process.env.EMBEDDING_API_URL || "";
 const EMBEDDING_API_KEY = process.env.EMBEDDING_API_KEY || "";
 const EMBEDDING_MODEL = process.env.EMBEDDING_MODEL || "text-embedding";
@@ -343,6 +344,7 @@ function classifyRequestPath(pathname = "") {
   if (pathname === "/api/export-resume") return "resume_export";
   if (pathname === "/api/upload-resume") return "resume_upload";
   if (pathname === "/api/fetch-jd") return "jd_fetch";
+  if (pathname === "/api/ocr-jd-image") return "jd_image_ocr";
   return "other";
 }
 
@@ -355,6 +357,7 @@ function formatRequestLabel(pathname = "") {
     resume_export: "导出简历",
     resume_upload: "上传简历",
     jd_fetch: "抓取 JD",
+    jd_image_ocr: "识别 JD 图片",
     other: "其他操作",
   };
   return map[classifyRequestPath(pathname)] || "其他操作";
@@ -768,6 +771,12 @@ function runPythonJsonWithFallback(scriptPath, args, defaultErrorMessage) {
 function extractText(filePath) {
   const script = path.join(__dirname, "extract_text.py");
   return runPythonJsonWithFallback(script, [filePath], "文本解析失败")
+    .then((parsed) => parsed.text || "");
+}
+
+function extractImageText(filePath) {
+  const script = path.join(__dirname, "ocr_image.py");
+  return runPythonJsonWithFallback(script, [filePath], "图片文字识别失败")
     .then((parsed) => parsed.text || "");
 }
 
@@ -2359,6 +2368,70 @@ async function handleFetchJd(req, res) {
     sendError(res, 422, "JD 获取失败，请手动粘贴 JD 内容。", error.message, "jd_fetch_failed");
   }
 }
+
+async function handleOcrJdImage(req, res) {
+  const current = requireAuth(req, res);
+  if (!current) return;
+
+  const body = await readBody(req);
+  const parts = parseMultipart(body, req.headers["content-type"]);
+  const file = parts.find((p) => p.name === "jdImage" && p.filename);
+  if (!file) return sendError(res, 400, "请先选择一张 JD 图片。", null, "missing_file");
+  if (!path.extname(file.filename || "")) return sendError(res, 400, "图片缺少扩展名，请上传 PNG、JPG 或 WebP 图片。", null, "missing_extension");
+  if (!file.data?.length) return sendError(res, 400, "图片内容为空，请重新选择文件。", null, "empty_file");
+  if (file.data.length > MAX_UPLOAD_BYTES) return sendError(res, 413, "请上传小于 10MB 的图片。", null, "file_too_large");
+
+  const ext = path.extname(file.filename).toLowerCase();
+  if (!IMAGE_OCR_EXTENSIONS.has(ext)) {
+    return sendError(res, 400, "目前仅支持 PNG、JPG、JPEG 和 WebP 图片。", null, "unsupported_file_type");
+  }
+
+  const filename = safeFileName(`jd-${file.filename}`);
+  const filePath = path.join(uploadDir, filename);
+  fs.writeFileSync(filePath, file.data);
+
+  const startedAt = Date.now();
+  try {
+    const text = normalizeText(await extractImageText(filePath));
+    if (!text) {
+      return sendError(res, 422, "图片里没有识别到可用文字，请换一张更清晰的截图，或手动粘贴 JD。", null, "empty_ocr_text");
+    }
+
+    logUserEvent("jd.image_ocr", {
+      userId: current.user.id,
+      fileType: ext.replace(".", ""),
+      textLength: text.length,
+    });
+    logAiMetric("jd_image_ocr.completed", {
+      userId: current.user.id,
+      durationMs: Date.now() - startedAt,
+      textLength: text.length,
+      status: "success",
+    });
+
+    sendSuccess(res, 200, {
+      message: "已识别图片文字，请检查后生成报告。",
+      text,
+      fileName: file.filename,
+      textLength: text.length,
+    });
+  } catch (error) {
+    logErrorEvent("jd_image_ocr.failed", {
+      userId: current.user.id,
+      errorCode: "jd_image_ocr_failed",
+      message: error.message,
+    });
+    logAiMetric("jd_image_ocr.failed", {
+      userId: current.user.id,
+      durationMs: Date.now() - startedAt,
+      status: "error",
+    });
+    const message = error.message.includes("tesseract_not_installed")
+      ? "当前部署环境还没有安装图片文字识别组件，请重新部署后再试。"
+      : "图片文字识别失败，请尝试更清晰的截图，或手动粘贴 JD。";
+    sendError(res, 422, message, error.message, "jd_image_ocr_failed");
+  }
+}
 async function handleAnalyze(req, res) {
   return handleAnalyzeSecure(req, res);
 }
@@ -3039,6 +3112,7 @@ const server = http.createServer(async (req, res) => {
     if (req.method === "GET" && url.pathname === "/api/auth/me") return handleAuthMe(req, res);
     if (req.method === "POST" && req.url === "/api/upload-resume") return await handleUpload(req, res);
     if (req.method === "POST" && req.url === "/api/fetch-jd") return await handleFetchJd(req, res);
+    if (req.method === "POST" && req.url === "/api/ocr-jd-image") return await handleOcrJdImage(req, res);
     if (req.method === "POST" && req.url === "/api/analyze") return await handleAnalyzeSecure(req, res);
     if (req.method === "POST" && req.url === "/api/batch-jds") return await handleBatchJdsSecure(req, res);
     if (req.method === "POST" && req.url === "/api/cluster-jds") return await handleClusterJdsSecure(req, res);

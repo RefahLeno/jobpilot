@@ -2253,6 +2253,42 @@ async function fetchJd() {
   }
 }
 
+async function uploadJdImage(file) {
+  if (!file) return;
+  const isSupportedImage = /^image\/(png|jpe?g|webp)$/i.test(file.type || "") || /\.(png|jpe?g|webp)$/i.test(file.name || "");
+  if (!isSupportedImage) {
+    return toast("请上传 PNG、JPG 或 WebP 图片", "warn");
+  }
+
+  const btn = $("jdImageBtn");
+  const form = new FormData();
+  form.append("jdImage", file);
+  setStatusNote("jdImageStatusNote", "info", "正在识别图片文字...");
+  setLoading(btn, true, "识别中...");
+
+  try {
+    const response = await fetch("/api/ocr-jd-image", { method: "POST", body: form });
+    const data = await parseResponse(response);
+    $("jdText").value = data.text || "";
+    state.jdText = data.text || "";
+    state.jdSourceUrl = "";
+    state.ui.singleStatus = state.resumeText ? "jd_ready" : "idle";
+    renderChips($("jdKeywords"), localKeywords(state.jdText), "等待提取 JD 关键词");
+    renderSingleState();
+    setStatusNote("jdImageStatusNote", "success", data.message || "已识别图片文字，请检查后生成报告。");
+    trackEvent("jd.image_ocr", {
+      fileType: file.type || "",
+      textLength: state.jdText.length,
+    });
+    toast("JD 图片识别完成");
+  } catch (error) {
+    handleUiError(error, { statusNoteId: "jdImageStatusNote" });
+  } finally {
+    setLoading(btn, false);
+    $("jdImageInput").value = "";
+  }
+}
+
 async function analyze() {
   state.jdText = $("jdText").value.trim();
   if (!state.resumeText) return toast("请先上传并解析简历", "warn");
@@ -2767,6 +2803,15 @@ $("uploadZone").addEventListener("drop", (event) => {
   $("uploadZone").classList.remove("dragging");
   const file = event.dataTransfer.files?.[0];
   if (file) uploadResume(file);
+});
+
+$("jdImageBtn").addEventListener("click", () => {
+  $("jdImageInput").click();
+});
+
+$("jdImageInput").addEventListener("change", (event) => {
+  const file = event.target.files?.[0];
+  if (file) uploadJdImage(file);
 });
 
 $("jdText").addEventListener("input", (event) => {

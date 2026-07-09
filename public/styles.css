@@ -1438,6 +1438,22 @@ iframe {
   margin-top: 18px;
 }
 
+.jd-tools {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+  margin-top: 10px;
+}
+
+.jd-tools .status-note {
+  flex: 1 1 260px;
+  margin-top: 0;
+  min-height: 44px;
+  display: flex;
+  align-items: center;
+}
+
 input,
 textarea {
   width: 100%;
