@@ -8,6 +8,7 @@
   resumeKeywordGroups: [],
   reportId: "",
   batchRunId: "",
+  batchDraftJds: [],
   batchJds: [],
   clusters: [],
   variants: [],
@@ -641,12 +642,16 @@ function renderBatchSetupGuide() {
 
   const authReady = Boolean(state.auth.user);
   const resumeReady = Boolean(state.resumeText);
-  const hasBatchInput = Boolean(($("batchText")?.value || "").trim() || ($("batchUrls")?.value || "").trim());
+  const hasBatchInput = Boolean(
+    state.batchDraftJds.length ||
+    ($("batchDraftText")?.value || "").trim() ||
+    ($("batchUrls")?.value || "").trim()
+  );
 
   const items = [
     authReady ? "已登录，可以保存海投批次和简历版本。" : "先登录，系统才会保存你的海投批次和版本记录。",
     resumeReady ? "基础简历已就绪，可以作为海投版本的母版。" : "先上传一份基础简历，海投生成会基于这份内容展开。",
-    hasBatchInput ? "JD 输入已准备好，下一步可以直接开始解析。" : "粘贴多条 JD 文本或链接，再点击“解析 JD”。",
+    hasBatchInput ? "JD 输入已准备好，下一步可以直接开始解析。" : "逐条粘贴 JD 或上传图片识别，再点 + 加入队列。",
   ];
 
   list.innerHTML = items.map((item) => `<li>${item}</li>`).join("");
@@ -2071,6 +2076,7 @@ renderVariants = function renderVariantsOverride() {
 function renderAll() {
   renderResumePanel();
   renderSingleState();
+  renderBatchDraftQueue();
   renderJdList();
   renderClusters();
   renderBatchDashboard();
@@ -2344,10 +2350,133 @@ function sampleBatchText() {
   ].join("\n---\n");
 }
 
+function splitBatchText(text) {
+  return String(text || "")
+    .split(/\n\s*---\s*\n/g)
+    .map((item) => item.trim())
+    .filter(Boolean);
+}
+
+function syncBatchTextField() {
+  const field = $("batchText");
+  if (field) field.value = state.batchDraftJds.join("\n---\n");
+}
+
+function resetBatchResultsForDraftChange() {
+  state.batchRunId = "";
+  state.batchJds = [];
+  state.clusters = [];
+  state.variants = [];
+  state.ui.batchFailures = [];
+  saveValue(storageKeys.batchRunId, "");
+}
+
+function renderBatchOutputsAfterDraftChange() {
+  renderBatchDraftQueue();
+  renderJdList();
+  renderClusters();
+  renderBatchDashboard();
+  renderVariants();
+  updateRestoreButtons();
+}
+
+function renderBatchDraftQueue() {
+  const list = $("batchDraftQueue");
+  if (!list) return;
+  list.innerHTML = "";
+  $("jdCounter").textContent = `${state.batchJds.length || state.batchDraftJds.length} 条`;
+
+  if (!state.batchDraftJds.length) {
+    list.className = "draft-jd-list empty-state";
+    list.textContent = "尚未加入 JD。";
+    syncBatchTextField();
+    return;
+  }
+
+  list.className = "draft-jd-list";
+  state.batchDraftJds.forEach((text, index) => {
+    const item = document.createElement("article");
+    item.className = "draft-jd-item";
+
+    const copy = document.createElement("div");
+    copy.className = "draft-jd-copy";
+
+    const title = document.createElement("strong");
+    title.textContent = `第 ${index + 1} 条 JD`;
+    const summary = document.createElement("p");
+    summary.textContent = trimText(text.replace(/\s+/g, " "), 110);
+    copy.append(title, summary);
+
+    const remove = document.createElement("button");
+    remove.className = "secondary mini-primary draft-remove-btn";
+    remove.type = "button";
+    remove.dataset.index = String(index);
+    remove.textContent = "删除";
+
+    item.append(copy, remove);
+    list.appendChild(item);
+  });
+  syncBatchTextField();
+}
+
+function addBatchDraftJd() {
+  const text = $("batchDraftText").value.trim();
+  if (!text) return toast("请先粘贴一条 JD，或上传图片识别文字", "warn");
+  resetBatchResultsForDraftChange();
+  state.batchDraftJds.push(text);
+  $("batchDraftText").value = "";
+  state.ui.batchStatus = "idle";
+  renderBatchOutputsAfterDraftChange();
+  renderBatchStatePanels();
+  toast(`已加入第 ${state.batchDraftJds.length} 条 JD`);
+}
+
+function removeBatchDraftJd(index) {
+  resetBatchResultsForDraftChange();
+  state.batchDraftJds.splice(index, 1);
+  state.ui.batchStatus = "idle";
+  renderBatchOutputsAfterDraftChange();
+  renderBatchStatePanels();
+}
+
+async function uploadBatchJdImage(file) {
+  if (!file) return;
+  if (!requireAuthAction("登录后才能识别和保存 JD 图片。")) return;
+  const isSupportedImage = /^image\/(png|jpe?g|webp)$/i.test(file.type || "") || /\.(png|jpe?g|webp)$/i.test(file.name || "");
+  if (!isSupportedImage) return toast("请上传 PNG、JPG 或 WebP 图片", "warn");
+
+  const btn = $("batchImageBtn");
+  const form = new FormData();
+  form.append("jdImage", file);
+  setStatusNote("batchImageStatusNote", "info", "正在识别图片文字...");
+  setLoading(btn, true, "识别中...");
+
+  try {
+    const response = await fetch("/api/ocr-jd-image", { method: "POST", body: form });
+    const data = await parseResponse(response);
+    $("batchDraftText").value = data.text || "";
+    setStatusNote("batchImageStatusNote", "success", "已识别图片文字，检查后点 + 加入队列。");
+    renderBatchSetupGuide();
+    trackEvent("jd.image_ocr.batch", {
+      fileType: file.type || "",
+      textLength: (data.text || "").length,
+    });
+    toast("JD 图片识别完成");
+  } catch (error) {
+    handleUiError(error, { statusNoteId: "batchImageStatusNote" });
+  } finally {
+    setLoading(btn, false);
+    $("batchImageInput").value = "";
+  }
+}
+
 async function parseBatchJds() {
   if (!state.resumeText) return toast("请先上传基础简历", "warn");
 
-  const batchText = $("batchText").value.trim();
+  const draftText = $("batchDraftText").value.trim();
+  if (draftText) addBatchDraftJd();
+  const batchText = state.batchDraftJds.join("\n---\n").trim();
+  syncBatchTextField();
   const urls = $("batchUrls")
     .value
     .split(/\n+/)
@@ -2828,7 +2957,7 @@ $("jdText").addEventListener("input", (event) => {
   renderChips($("jdKeywords"), localKeywords(event.target.value), "等待提取 JD 关键词");
 });
 
-$("batchText").addEventListener("input", () => {
+$("batchDraftText").addEventListener("input", () => {
   if (state.ui.batchStatus === "idle") renderBatchStatePanels();
   else renderBatchSetupGuide();
 });
@@ -2853,8 +2982,29 @@ $("restoreReportBtn").addEventListener("click", restoreLastReport);
 $("restoreBatchBtn").addEventListener("click", restoreLastBatchRun);
 
 $("loadSampleBatchBtn").addEventListener("click", () => {
-  $("batchText").value = sampleBatchText();
+  resetBatchResultsForDraftChange();
+  state.batchDraftJds = splitBatchText(sampleBatchText());
+  $("batchDraftText").value = "";
+  renderBatchOutputsAfterDraftChange();
+  renderBatchStatePanels();
   toast("已填入 5 条示例 JD");
+});
+
+$("addBatchJdBtn").addEventListener("click", addBatchDraftJd);
+
+$("batchImageBtn").addEventListener("click", () => {
+  $("batchImageInput").click();
+});
+
+$("batchImageInput").addEventListener("change", (event) => {
+  const file = event.target.files?.[0];
+  if (file) uploadBatchJdImage(file);
+});
+
+$("batchDraftQueue").addEventListener("click", (event) => {
+  const btn = event.target.closest(".draft-remove-btn");
+  if (!btn) return;
+  removeBatchDraftJd(Number(btn.dataset.index));
 });
 
 $("parseBatchBtn").addEventListener("click", parseBatchJds);

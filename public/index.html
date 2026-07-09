@@ -439,11 +439,21 @@
               </ol>
               <p class="batch-setup-note" id="batchSetupNote">完成前两步后，海投优化才会真正跑起来。</p>
             </div>
-            <textarea
-              id="batchText"
-              class="batch-textarea"
-              placeholder="粘贴多条 JD，每条之间用 --- 分隔。&#10;&#10;示例：&#10;岗位：AI 产品经理...&#10;---&#10;岗位：内容产品经理..."
-            ></textarea>
+            <div class="batch-compose">
+              <textarea
+                id="batchDraftText"
+                class="batch-textarea"
+                placeholder="粘贴一条 JD，或上传 JD 图片识别后再点 + 加入队列。&#10;&#10;示例：&#10;岗位：AI 产品经理...&#10;职责：...&#10;要求：..."
+              ></textarea>
+              <div class="batch-compose-actions">
+                <button id="batchImageBtn" class="secondary" type="button">上传 JD 图片</button>
+                <input id="batchImageInput" class="hidden" type="file" accept="image/png,image/jpeg,image/webp" />
+                <button id="addBatchJdBtn" class="icon-action" type="button" title="加入 JD 队列" aria-label="加入 JD 队列">+</button>
+              </div>
+              <div class="status-note hidden" id="batchImageStatusNote"></div>
+              <div id="batchDraftQueue" class="draft-jd-list empty-state">尚未加入 JD。</div>
+            </div>
+            <textarea id="batchText" class="hidden" aria-hidden="true"></textarea>
             <textarea
               id="batchUrls"
               class="url-textarea"

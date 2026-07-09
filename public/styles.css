@@ -1483,6 +1483,68 @@ textarea {
   height: 280px;
 }
 
+.batch-compose {
+  display: grid;
+  gap: 10px;
+  margin-top: 18px;
+}
+
+.batch-compose .batch-textarea {
+  margin-top: 0;
+}
+
+.batch-compose-actions {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.icon-action {
+  width: 44px;
+  min-width: 44px;
+  padding: 0;
+  font-size: 24px;
+  line-height: 1;
+}
+
+.draft-jd-list {
+  display: grid;
+  gap: 10px;
+  max-height: 210px;
+  overflow: auto;
+  padding-right: 4px;
+}
+
+.draft-jd-item {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 10px;
+  align-items: center;
+  padding: 12px;
+  border: 1px solid rgba(212, 226, 244, 0.92);
+  border-radius: 18px;
+  background: rgba(255, 255, 255, 0.76);
+}
+
+.draft-jd-copy {
+  min-width: 0;
+}
+
+.draft-jd-copy strong {
+  display: block;
+  color: var(--ink);
+  font-size: 14px;
+}
+
+.draft-jd-copy p {
+  margin-top: 5px;
+  color: var(--muted);
+  font-size: 13px;
+  line-height: 1.55;
+}
+
 .url-textarea {
   height: 104px;
   min-height: 104px;

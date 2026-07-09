@@ -657,6 +657,13 @@ function assertOwnership(res, record, userId, type = "record") {
   return true;
 }
 
+function getOwnedRecordOrNull(name, id, userId) {
+  if (!id) return null;
+  const record = getRecord(name, id);
+  if (!record || record.status === "deleted") return null;
+  return record.userId === userId ? record : null;
+}
+
 function withUser(record, userId) {
   return { ...record, userId };
 }
@@ -2533,8 +2540,7 @@ async function handleAnalyzeSecure(req, res) {
   if (!normalizeText(resumeText)) return sendError(res, 400, "请先上传并解析简历。", null, "missing_resume_text");
   if (!normalizeText(jdText)) return sendError(res, 400, "请先填写 JD 内容。", null, "missing_jd_text");
 
-  const resumeRecord = resumeId ? getRecord("resumes", resumeId) : null;
-  if (resumeId && !assertOwnership(res, resumeRecord, current.user.id, "resume")) return;
+  const resumeRecord = getOwnedRecordOrNull("resumes", resumeId, current.user.id);
 
   const resumeSummary = summarize(resumeText, "resume");
   const jdSummary = summarize(jdText, "jd");
@@ -2660,8 +2666,7 @@ async function handleBatchJdsSecure(req, res) {
   if (!current) return;
   if (!checkQuota(res, current.user, "batchRuns")) return;
   const { resumeText = "", resumeId, batchText = "", urls = [], manualItems = [] } = parseJson(await readBody(req, 10 * 1024 * 1024));
-  const resumeRecord = resumeId ? getRecord("resumes", resumeId) : null;
-  if (resumeId && !assertOwnership(res, resumeRecord, current.user.id, "resume")) return;
+  const resumeRecord = getOwnedRecordOrNull("resumes", resumeId, current.user.id);
 
   const items = [];
   const failures = [];
@@ -2740,12 +2745,11 @@ async function handleClusterJdsSecure(req, res) {
   if (!current) return;
   const { resumeText = "", batchRunId = "", jds = [] } = parseJson(await readBody(req, 10 * 1024 * 1024));
   if (!Array.isArray(jds) || jds.length < 2) return sendError(res, 400, "至少需要 2 条 JD 才能进行岗位方向归类。", null, "insufficient_jds_for_cluster");
-  const batchRun = batchRunId ? getRecord("batchRuns", batchRunId) : null;
-  if (batchRunId && !assertOwnership(res, batchRun, current.user.id, "batch_run")) return;
+  const batchRun = getOwnedRecordOrNull("batchRuns", batchRunId, current.user.id);
 
   const clusters = clusterJDs(jds, resumeText);
   const clusterRecords = clusters.map((cluster) => createClusterRecord(withUser({
-    batchRunId,
+    batchRunId: batchRun?.id || "",
     name: cluster.name,
     jdIds: cluster.jdIds,
     jdTitles: cluster.jdTitles,
@@ -2760,7 +2764,7 @@ async function handleClusterJdsSecure(req, res) {
     provider: "local-fallback",
   }, current.user.id)));
 
-  if (batchRunId) updateRecord("batchRuns", batchRunId, { clusters: clusterRecords.map((item) => item.id) });
+  if (batchRun) updateRecord("batchRuns", batchRun.id, { clusters: clusterRecords.map((item) => item.id) });
 
   sendSuccess(res, 200, {
     message: `已生成 ${clusters.length} 个岗位方向。`,
@@ -2792,10 +2796,8 @@ async function handleResumeVariantsSecure(req, res) {
   const selected = clusters.filter((cluster) => !targetClusterIds.length || targetClusterIds.includes(cluster.id));
   if (!selected.length) return sendError(res, 400, "No target cluster was selected.", null, "missing_target_clusters");
 
-  const resumeRecord = resumeId ? getRecord("resumes", resumeId) : null;
-  if (resumeId && !assertOwnership(res, resumeRecord, current.user.id, "resume")) return;
-  const batchRun = batchRunId ? getRecord("batchRuns", batchRunId) : null;
-  if (batchRunId && !assertOwnership(res, batchRun, current.user.id, "batch_run")) return;
+  const resumeRecord = getOwnedRecordOrNull("resumes", resumeId, current.user.id);
+  const batchRun = getOwnedRecordOrNull("batchRuns", batchRunId, current.user.id);
 
   const linkedResume = resumeRecord || createResumeRecord(withUser({
     fileName: "未命名简历",
@@ -2808,7 +2810,7 @@ async function handleResumeVariantsSecure(req, res) {
 
   const variants = selected.map((cluster) => makeResumeVariant(resumeText, cluster, jds));
   const variantRecords = variants.map((variant) => createVariantRecord(withUser({
-    batchRunId,
+    batchRunId: batchRun?.id || "",
     resumeId: linkedResume.id,
     clusterId: variant.clusterId,
     name: variant.name,
@@ -2820,7 +2822,7 @@ async function handleResumeVariantsSecure(req, res) {
     isPrimary: false,
     provider: "local-fallback",
   }, current.user.id)));
-  if (batchRunId) updateRecord("batchRuns", batchRunId, { variants: variantRecords.map((item) => item.id) });
+  if (batchRun) updateRecord("batchRuns", batchRun.id, { variants: variantRecords.map((item) => item.id) });
 
   sendSuccess(res, 200, {
     message: `已生成 ${variants.length} 个简历版本。`,
