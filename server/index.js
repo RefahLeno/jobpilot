@@ -552,6 +552,7 @@ function verifyPassword(password, storedHash) {
   const [salt, hashed] = String(storedHash || "").split(":");
   if (!salt || !hashed) return false;
   const derived = crypto.scryptSync(password, salt, 64).toString("hex");
+  if (Buffer.byteLength(hashed, "hex") !== Buffer.byteLength(derived, "hex")) return false;
   return crypto.timingSafeEqual(Buffer.from(hashed, "hex"), Buffer.from(derived, "hex"));
 }
 
@@ -564,7 +565,19 @@ function createSessionRecord(payload) {
 }
 
 function getUserByEmail(email) {
-  return findRecords("users", (item) => normalizeEmail(item.email) === normalizeEmail(email), 1)[0] || null;
+  return getUsersByEmail(email)[0] || null;
+}
+
+function getUsersByEmail(email) {
+  const normalizedEmail = normalizeEmail(email);
+  if (!normalizedEmail) return [];
+  return findRecords("users", (item) =>
+    item.status !== "deleted" && normalizeEmail(item.email) === normalizedEmail
+  );
+}
+
+function getUserByEmailAndPassword(email, password) {
+  return getUsersByEmail(email).find((user) => verifyPassword(password, user.passwordHash)) || null;
 }
 
 function getSessionByToken(token) {
@@ -2166,6 +2179,7 @@ async function handleRegister(req, res) {
   }
   const user = createUserRecord({
     email: normalizedEmail,
+    emailNormalized: normalizedEmail,
     passwordHash: hashPassword(password),
     plan: "free",
     quota: {
@@ -2187,8 +2201,8 @@ async function handleRegister(req, res) {
 
 async function handleLogin(req, res) {
   const { email = "", password = "" } = parseJson(await readBody(req, 512 * 1024));
-  const user = getUserByEmail(email);
-  if (!user || !verifyPassword(password, user.passwordHash)) {
+  const user = getUserByEmailAndPassword(email, password);
+  if (!user) {
     logErrorEvent("auth.login.invalid_credentials", { email: normalizeEmail(email), errorCode: "invalid_credentials" });
     return sendError(res, 401, "Email or password is incorrect.", null, "invalid_credentials");
   }
