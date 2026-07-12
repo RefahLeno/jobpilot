@@ -2158,33 +2158,33 @@ function makeResumeVariant(resumeText, cluster, jds) {
   const strengthen = cluster.keywords.filter((kw) => !resumeKeywords.some((rk) => rk.toLowerCase() === kw.toLowerCase())).slice(0, 8);
   const matched = cluster.keywords.filter((kw) => resumeKeywords.some((rk) => rk.toLowerCase() === kw.toLowerCase())).slice(0, 8);
   const proofWarnings = strengthen.length
-    ? strengthen.slice(0, 5).map((kw) => `Only add ${kw} if it is backed by real experience.`)
-    : ["This direction is already close to the base resume. Double-check metrics and claims before sending."];
+    ? strengthen.slice(0, 5).map((kw) => `仅在具备真实经历支撑时添加${kw}。`)
+    : ["该方向与基础简历已经较为接近，投递前请再次核对数据和表述。"];
   const draftBullets = [
-    `Rewrite the profile summary around ${cluster.name} and highlight ${cluster.keywords.slice(0, 4).join(", ")}.`,
-    "Move the most relevant projects upward and use outcome-focused bullet points.",
-    `Reuse responsibility language from ${clusterJds.slice(0, 3).map((jd) => jd.title).join(", ")}.`,
-    "Push unrelated content lower so the most relevant experience gets more space.",
+    `围绕${cluster.name}方向改写个人摘要，并突出${cluster.keywords.slice(0, 4).join("、")}。`,
+    "将最相关的项目经历前置，并使用突出成果的要点表述。",
+    `参考${clusterJds.slice(0, 3).map((jd) => jd.title).join("、")}中的岗位职责用语进行改写。`,
+    "将关联度较低的内容后移，为最相关的经历留出更多篇幅。",
   ];
   return {
     id: `variant-${cluster.id}`,
     clusterId: cluster.id,
     name: `${cluster.name}版本`,
-    positioning: `Designed for ${cluster.name}, covering ${cluster.jdCount} JDs with an average match score of ${cluster.averageMatchScore}.`,
+    positioning: `面向${cluster.name}方向，覆盖 ${cluster.jdCount} 条 JD，平均匹配分为 ${cluster.averageMatchScore} 分。`,
     keywordStrategy: {
       strengthen,
       matched,
       secondary: cluster.niceToHave,
     },
     rewritePlan: [
-      "Rewrite the summary so it sounds like the target direction, not a generic background.",
-      "Reorder the skills section using the most repeated JD terms first.",
-      "Prioritize the top 2-3 projects that best match this direction.",
-      "Add verified scale, efficiency, revenue, growth, or launch outcomes where possible.",
+      "改写个人摘要，使其突出目标方向，而不是泛泛描述个人背景。",
+      "根据 JD 中出现频率重新排列技能，优先展示高频词。",
+      "优先展示与该方向最匹配的 2–3 个项目。",
+      "尽可能补充经过核实的规模、效率、收入、增长或上线成果。",
     ],
     draftContent: {
-      title: `${cluster.name} tailored draft`,
-      summary: `This version highlights ${matched.concat(strengthen).slice(0, 6).join(", ")} for ${cluster.name} opportunities.`,
+      title: `${cluster.name}定向简历草稿`,
+      summary: `该版本重点突出${matched.concat(strengthen).slice(0, 6).join("、")}，以匹配${cluster.name}方向的岗位机会。`,
       skills: cluster.keywords.slice(0, 12),
       bullets: draftBullets,
       suitableJDs: clusterJds.map((jd) => jd.title),

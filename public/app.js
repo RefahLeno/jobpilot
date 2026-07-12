@@ -581,6 +581,19 @@ function localizeReportText(text) {
 function localizeBatchText(text) {
   return String(text || "")
     .replace(/These JDs repeatedly emphasize/gi, "这些 JD 反复强调")
+    .replace(/Designed for (.+?), covering (\d+) JDs? with an average match score of (\d+)\.?/gi, "面向$1方向，覆盖 $2 条 JD，平均匹配分为 $3 分。")
+    .replace(/Only add (.+?) if it is backed by real experience\.?/gi, "仅在具备真实经历支撑时添加$1。")
+    .replace(/This direction is already close to the base resume\. Double-check metrics and claims before sending\.?/gi, "该方向与基础简历已经较为接近，投递前请再次核对数据和表述。")
+    .replace(/This version highlights (.+?) for (.+?) opportunities\.?/gi, "该版本重点突出$1，以匹配$2方向的岗位机会。")
+    .replace(/Rewrite the profile summary around (.+?) and highlight (.+?)\.?/gi, "围绕$1方向改写个人摘要，并突出$2。")
+    .replace(/Move the most relevant projects upward and use outcome-focused bullet points\.?/gi, "将最相关的项目经历前置，并使用突出成果的要点表述。")
+    .replace(/Reuse responsibility language from (.+?)\.?/gi, "参考$1中的岗位职责用语进行改写。")
+    .replace(/Push unrelated content lower so the most relevant experience gets more space\.?/gi, "将关联度较低的内容后移，为最相关的经历留出更多篇幅。")
+    .replace(/Rewrite the summary so it sounds like the target direction, not a generic background\.?/gi, "改写个人摘要，使其突出目标方向，而不是泛泛描述个人背景。")
+    .replace(/Reorder the skills section using the most repeated JD terms first\.?/gi, "根据 JD 中出现频率重新排列技能，优先展示高频词。")
+    .replace(/Prioritize the top 2-3 projects that best match this direction\.?/gi, "优先展示与该方向最匹配的 2–3 个项目。")
+    .replace(/Add verified scale, efficiency, revenue, growth, or launch outcomes where possible\.?/gi, "尽可能补充经过核实的规模、效率、收入、增长或上线成果。")
+    .replace(/tailored draft/gi, "定向简历草稿")
     .replace(/resume[-\s]?variant/gi, "简历版本")
     .replace(/\bvariant\b/gi, "版本")
     .replace(/\bobserve\b/gi, "观察")
@@ -1954,7 +1967,7 @@ function renderVariants() {
       </div>
       <strong>草稿摘要</strong>
       <p>${variant.draftContent?.summary || ""}</p>
-      <strong>改写 bullet</strong>
+      <strong>改写要点</strong>
       <ul>${(variant.draftContent?.bullets || []).map((item) => `<li>${item}</li>`).join("")}</ul>
     `;
     details.appendChild(panel);
@@ -2718,7 +2731,7 @@ renderVariants = function renderVariantsManaged() {
       </div>
       <strong>草稿摘要</strong>
       <p>${localizeBatchText(variant.draftContent?.summary || "")}</p>
-      <strong>改写 bullet</strong>
+      <strong>改写要点</strong>
       <ul>${(variant.draftContent?.bullets || []).map((item) => `<li>${localizeBatchText(item)}</li>`).join("")}</ul>
       <strong>最近导出</strong>
       <div class="variant-history">
