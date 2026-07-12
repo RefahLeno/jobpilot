@@ -687,7 +687,6 @@ h1 {
 
 .agent-strip strong {
   display: block;
-  margin-top: 10px;
   font-size: 18px;
 }
 
@@ -1177,6 +1176,14 @@ h1 {
   align-items: flex-start;
   justify-content: space-between;
   gap: 16px;
+}
+
+.match-action-tools {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 12px;
+  flex-shrink: 0;
 }
 
 h2 {
@@ -2941,6 +2948,15 @@ ul {
   .match-action {
     align-items: stretch;
     flex-direction: column;
+  }
+
+  .match-action-tools {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .match-action-tools .step {
+    align-self: flex-start;
   }
 
   .hero {

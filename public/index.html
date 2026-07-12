@@ -209,22 +209,18 @@
 
       <section class="agent-strip" id="ai-agents">
         <article>
-          <span>01</span>
           <strong>解析简历</strong>
           <p>识别简历文本、总结经历结构，并提取技能、行业和亮点关键词。</p>
         </article>
         <article>
-          <span>02</span>
           <strong>解析 JD</strong>
           <p>提取岗位职责、年限要求、硬技能、软技能和加分项。</p>
         </article>
         <article>
-          <span>03</span>
           <strong>匹配评分</strong>
           <p>结合关键词覆盖、语义相似和硬性条件，输出更可解释的分数。</p>
         </article>
         <article>
-          <span>04</span>
           <strong>生成版本建议</strong>
           <p>为不同岗位方向提供修改方案和简历草稿，不编造用户没有的经历。</p>
         </article>
@@ -277,7 +273,6 @@
                 <h2>简历预览</h2>
                 <p>上传后自动提取文本、展示摘要，并保留预览内容供你核对。</p>
               </div>
-              <span class="step">02</span>
             </div>
             <div class="preview-shell">
               <iframe id="pdfPreview" class="hidden" title="PDF 简历预览"></iframe>
@@ -291,7 +286,7 @@
                 <h2>岗位 JD</h2>
                 <p>支持从链接获取，也支持直接粘贴岗位描述。</p>
               </div>
-              <span class="step">03</span>
+              <span class="step">02</span>
             </div>
             <div class="input-row">
               <input id="jdUrl" type="url" placeholder="粘贴 JD 链接，例如招聘网站岗位详情页" />
@@ -316,9 +311,12 @@
               <h2>匹配报告</h2>
               <p>综合关键词覆盖、语义匹配和硬性条件，生成一份更容易理解和执行的投递建议。</p>
             </div>
-            <div class="button-row action-row">
-              <button id="restoreReportBtn" class="secondary hidden" type="button">恢复上次报告</button>
-              <button id="analyzeBtn" type="button">生成匹配分</button>
+            <div class="match-action-tools">
+              <span class="step">03</span>
+              <div class="button-row action-row">
+                <button id="restoreReportBtn" class="secondary hidden" type="button">恢复上次报告</button>
+                <button id="analyzeBtn" type="button">生成匹配分</button>
+              </div>
             </div>
           </div>
           <div class="status-note hidden" id="reportStatusNote"></div>
@@ -487,7 +485,10 @@
                 <h2>岗位方向分类</h2>
                 <p>把相近 JD 聚成几个投递方向，帮助你决定该做哪几版简历。</p>
               </div>
-              <button id="clusterBtn" class="secondary" type="button">生成分类</button>
+              <div class="match-action-tools">
+                <span class="step">03</span>
+                <button id="clusterBtn" class="secondary" type="button">生成分类</button>
+              </div>
             </div>
             <div id="clusterList" class="cluster-list empty-state">解析 JD 后生成岗位方向分类。</div>
           </section>
@@ -499,9 +500,12 @@
               <h2>多版本简历方案</h2>
                 <p>每个岗位方向生成一版结构化草稿，帮助你更快调整表达和投递策略。</p>
             </div>
-            <div class="button-row action-row">
-              <button id="restoreBatchBtn" class="secondary hidden" type="button">恢复上次海投批次</button>
-              <button id="variantBtn" type="button">生成简历版本</button>
+            <div class="match-action-tools">
+              <span class="step">04</span>
+              <div class="button-row action-row">
+                <button id="restoreBatchBtn" class="secondary hidden" type="button">恢复上次海投批次</button>
+                <button id="variantBtn" type="button">生成简历版本</button>
+              </div>
             </div>
           </div>
           <div class="variant-summary-band">
