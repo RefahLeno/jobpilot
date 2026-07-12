@@ -578,6 +578,16 @@ function localizeReportText(text) {
     .replace(/experience/g, "经历");
 }
 
+function localizeBatchText(text) {
+  return String(text || "")
+    .replace(/These JDs repeatedly emphasize/gi, "这些 JD 反复强调")
+    .replace(/resume[-\s]?variant/gi, "简历版本")
+    .replace(/\bvariant\b/gi, "版本")
+    .replace(/\bobserve\b/gi, "观察")
+    .replace(/\bhigh\b/gi, "优先")
+    .replace(/\bmedium\b/gi, "一般");
+}
+
 function renderEvidenceList(items = []) {
   const container = $("evidenceList");
   if (!container) return;
@@ -707,7 +717,7 @@ function variantDownloadLabel(variant) {
 }
 
 function variantDisplayName(variant) {
-  return variant?.name || variant?.draftContent?.title || "未命名版本";
+  return localizeBatchText(variant?.name || variant?.draftContent?.title || "未命名版本");
 }
 
 function variantSortValue(value) {
@@ -772,10 +782,10 @@ function describeResumeSource(variant) {
 
 function deriveBatchDashboard() {
   const dashboard = {
-    headline: "先完成人岗方向分类，再决定主推版本。",
-    summary: "这里会汇总本批次最值得优先推进的方向、当前主推版本，以及最近导出动作，帮助你判断下一步先投哪一类岗位。",
+    headline: "先完成人岗方向分类，再决定优先投递版本。",
+    summary: "这里会汇总本批次最值得优先推进的方向、当前优先投递版本，以及最近导出动作，帮助你判断下一步先投哪一类岗位。",
     primaryVariantName: "待生成",
-    primaryVariantNote: "生成版本后可手动设为主推。",
+    primaryVariantNote: "生成版本后可手动设为优先投递。",
     priorityDirection: "待分类",
     priorityNote: "会结合覆盖 JD 数和平均匹配分判断。",
     coverage: `${state.batchJds.length || 0} 条 JD`,
@@ -799,7 +809,7 @@ function deriveBatchDashboard() {
     const cluster = clusters.find((item) => item.id === primaryVariant.clusterId) || {};
     const source = describeResumeSource(primaryVariant);
     dashboard.primaryVariantName = variantDisplayName(primaryVariant);
-    dashboard.primaryVariantNote = `${cluster.name || "未分配方向"} · 基于 ${source.name}`;
+    dashboard.primaryVariantNote = `${localizeBatchText(cluster.name || "未分配方向")} · 基于 ${source.name}`;
     dashboard.coverage = `${cluster.jdCount || 0} 条 JD`;
     dashboard.coverageNote = cluster.jdCount
       ? `这版更适合优先覆盖 ${cluster.jdCount} 条相近岗位。`
@@ -807,11 +817,11 @@ function deriveBatchDashboard() {
   }
 
   if (bestCluster) {
-    dashboard.priorityDirection = bestCluster.name || "当前方向";
+    dashboard.priorityDirection = localizeBatchText(bestCluster.name || "当前方向");
     dashboard.priorityNote = `${bestCluster.jdCount || 0} 条 JD · 平均匹配 ${bestCluster.averageMatchScore || 0} 分`;
-    dashboard.headline = `建议先推进“${bestCluster.name || "当前方向"}”这条投递线。`;
+    dashboard.headline = `建议先推进“${localizeBatchText(bestCluster.name || "当前方向")}”这条投递线。`;
     dashboard.summary = bestCluster.reason
-      ? bestCluster.reason
+      ? localizeBatchText(bestCluster.reason)
       : "这个方向在当前批次里更集中，也更适合优先产出和投递。";
   }
 
@@ -835,13 +845,13 @@ function deriveBatchDashboard() {
     const variant = state.variants.find((item) => item.clusterId === cluster.id) || null;
     const delivery = deliveryStatusMeta(variant?.deliveryStatus);
     const status = variant?.isPrimary
-      ? `主推中 · ${delivery.label}`
+      ? `优先投递 · ${delivery.label}`
       : variant
         ? delivery.label
         : "待处理";
     return {
       id: cluster.id,
-      name: cluster.name || "未命名方向",
+      name: localizeBatchText(cluster.name || "未命名方向"),
       jdCount: cluster.jdCount || 0,
       averageMatchScore: cluster.averageMatchScore || 0,
       variantName: variant ? variantDisplayName(variant) : "待生成版本",
@@ -888,9 +898,9 @@ function renderBatchDetailMarkup(item) {
     : null;
   const headline = report.bestCluster
     ? `建议这批优先推进“${report.bestCluster.name || "当前方向"}”`
-    : "先完成岗位分类，再判断这批应该主推哪条线";
+    : "先完成岗位分类，再判断这批应该优先投递哪条线";
   const summary = report.bestCluster?.reason
-    || "这里会集中展示这批 JD 的方向分布、主推版本和推进状态，方便你继续海投。";
+    || "这里会集中展示这批 JD 的方向分布、优先投递版本和推进状态，方便你继续海投。";
 
   return `
     <div class="detail-shell batch-report-shell">
@@ -910,7 +920,7 @@ function renderBatchDetailMarkup(item) {
         </article>
         <div class="summary-stat-grid batch-report-stats">
           <article>
-            <small>主推版本</small>
+            <small>优先投递版本</small>
             <strong>${report.primaryVariant ? variantDisplayName(report.primaryVariant) : "待生成"}</strong>
           </article>
           <article>
@@ -947,14 +957,14 @@ function renderBatchDetailMarkup(item) {
         <div class="detail-block batch-report-block">
           <strong>批次总览</strong>
           <p>基础简历：${source.name}</p>
-          <p>当前主推：${report.primaryVariant ? variantDisplayName(report.primaryVariant) : "还没有主推版本"}</p>
-          <p>主推覆盖：${primaryCluster?.jdCount || 0} 条 JD</p>
+          <p>当前优先投递：${report.primaryVariant ? variantDisplayName(report.primaryVariant) : "还没有优先投递版本"}</p>
+          <p>优先投递覆盖：${primaryCluster?.jdCount || 0} 条 JD</p>
           <p>最近导出：${report.latestExportedVariant ? `${variantDisplayName(report.latestExportedVariant)} · ${formatTimeLabel(report.latestExportedVariant.lastExportedAt)}` : "还没有导出记录"}</p>
         </div>
         <div class="detail-block batch-report-block">
           <strong>继续推进建议</strong>
           <div class="detail-list">
-            <div class="detail-list-item"><p>${report.primaryVariant ? `先沿着“${variantDisplayName(report.primaryVariant)}”继续投递或微调。` : "先生成版本，再挑一版设为主推。"}</p></div>
+            <div class="detail-list-item"><p>${report.primaryVariant ? `先沿着“${variantDisplayName(report.primaryVariant)}”继续投递或微调。` : "先生成版本，再挑一版设为优先投递。"}</p></div>
             <div class="detail-list-item"><p>${report.pendingCount ? `当前还有 ${report.pendingCount} 个版本未进入导出动作，建议优先清掉待处理项。` : "当前所有版本都已经进入过导出动作，可以继续回看投递反馈。"}</p></div>
             <div class="detail-list-item"><p>${report.bestCluster ? `优先方向是“${report.bestCluster.name}”，因为它在这批里的匹配度和方向集中度更高。` : "当前还缺少足够的分类结果，建议先完成岗位方向整理。"}</p></div>
           </div>
@@ -969,7 +979,7 @@ function renderBatchDetailMarkup(item) {
               const variant = report.variants.find((entry) => entry.clusterId === cluster.id);
               const delivery = deliveryStatusMeta(variant?.deliveryStatus);
               const status = variant?.isPrimary
-                ? `主推中 · ${delivery.label}`
+                ? `优先投递 · ${delivery.label}`
                 : variant
                   ? delivery.label
                   : "待处理";
@@ -990,7 +1000,7 @@ function renderBatchDetailMarkup(item) {
               const cluster = report.clusters.find((entry) => entry.id === variant.clusterId) || {};
               return `
                 <div class="detail-list-item batch-variant-item">
-                  <strong>${variantDisplayName(variant)}${variant.isPrimary ? "  · 主推" : ""}</strong>
+                  <strong>${variantDisplayName(variant)}${variant.isPrimary ? "  · 优先投递" : ""}</strong>
                   <p>${cluster.name || "未分配方向"} · ${deliveryStatusMeta(variant.deliveryStatus).label}${variant.lastExportedAt ? ` · 导出 ${formatTimeLabel(variant.lastExportedAt)}` : ""}</p>
                   <p>${trimText(variant.positioning || "暂无版本定位", 80)}</p>
                 </div>
@@ -1396,14 +1406,14 @@ function renderDetailPanel() {
             <strong>版本定位</strong>
             <p>${item.positioning || "暂无版本定位"}</p>
             <div class="chips">${(item.draftContent?.skills || []).slice(0, 12).map((kw) => `<span class="chip">${kw}</span>`).join("")}</div>
-            <p class="variant-secondary-note">${item.isPrimary ? "当前主推版本" : "尚未设为主推版本"}</p>
+            <p class="variant-secondary-note">${item.isPrimary ? "当前优先投递版本" : "尚未设为优先投递版本"}</p>
           </div>
           <div class="detail-block">
             <strong>导出状态</strong>
             <p>${variantDownloadLabel(item)}</p>
             <p>${downloadBlock}</p>
             <div class="support-actions variant-card-actions">
-              <button class="secondary mini-primary" type="button" data-id="${item.id}">${item.isPrimary ? "当前主推" : "设为主推"}</button>
+              <button class="secondary mini-primary" type="button" data-id="${item.id}">${item.isPrimary ? "当前优先投递" : "设为优先投递"}</button>
             </div>
           </div>
         </div>
@@ -1676,13 +1686,13 @@ function renderJdList() {
     card.className = "jd-card";
     card.innerHTML = `
       <div class="card-title-row">
-        <strong>${index + 1}. ${jd.title}</strong>
+        <strong>${index + 1}. ${localizeBatchText(jd.title)}</strong>
         <span>${jd.matchScore || 0} 分</span>
       </div>
-      <p>${jd.summary?.overview || jd.rawText.slice(0, 120)}</p>
+      <p>${localizeBatchText(jd.summary?.overview || jd.rawText.slice(0, 120))}</p>
       <div class="chips">${(jd.keywords || [])
         .slice(0, 8)
-        .map((kw) => `<span class="chip">${kw}</span>`)
+        .map((kw) => `<span class="chip">${localizeBatchText(kw)}</span>`)
         .join("")}</div>
     `;
     list.appendChild(card);
@@ -1706,12 +1716,12 @@ function renderClusters() {
     const card = document.createElement("article");
     card.className = "cluster-card";
     card.innerHTML = `
-      <div class="card-title-row"><strong>${cluster.name}</strong><span>${cluster.priority}</span></div>
+      <div class="card-title-row"><strong>${localizeBatchText(cluster.name)}</strong><span>${localizeBatchText(cluster.priority)}</span></div>
       <div class="cluster-meta"><span>${cluster.jdCount} 条 JD</span><span>均分 ${cluster.averageMatchScore}</span></div>
-      <p>${cluster.reason}</p>
+      <p>${localizeBatchText(cluster.reason)}</p>
       <div class="chips">${(cluster.keywords || [])
         .slice(0, 8)
-        .map((kw) => `<span class="chip">${kw}</span>`)
+        .map((kw) => `<span class="chip">${localizeBatchText(kw)}</span>`)
         .join("")}</div>
     `;
     list.appendChild(card);
@@ -1760,7 +1770,7 @@ function renderBatchDashboard() {
         <span>覆盖 ${item.jdCount} 条 JD</span>
         <span>均分 ${item.averageMatchScore}</span>
       </div>
-      <p>${item.isPrimary ? "当前主推版本" : "对应版本"}：${item.variantName}</p>
+      <p>${item.isPrimary ? "当前优先投递版本" : "对应版本"}：${item.variantName}</p>
     `;
     directionList.appendChild(card);
   });
@@ -2651,10 +2661,10 @@ renderVariants = function renderVariantsManaged() {
     const cluster = state.clusters.find((item) => item.id === variant.clusterId) || {};
     const displayName = variantDisplayName(variant);
     const delivery = deliveryStatusMeta(variant.deliveryStatus);
-    const primaryText = variant.isPrimary ? "当前主推" : "设为主推";
+    const primaryText = variant.isPrimary ? "当前优先投递" : "设为优先投递";
     const inlinePrimary = variant.isPrimary
-      ? `<span class="primary-flag">当前主推</span>`
-      : (cluster.name || "未分配方向");
+      ? `<span class="primary-flag">当前优先投递</span>`
+      : localizeBatchText(cluster.name || "未分配方向");
     const historyItems = (variant.exportHistory || []).slice(0, 3).map((entry) => `
       <div class="variant-history-item">
         <span>${entry.fileName || "Word 草稿"}</span>
@@ -2666,14 +2676,14 @@ renderVariants = function renderVariantsManaged() {
     row.innerHTML = `
       <td>
         <strong>${displayName}</strong>
-        ${variant.isPrimary ? `<div class="variant-secondary-note">当前主推</div>` : ""}
+        ${variant.isPrimary ? `<div class="variant-secondary-note">当前优先投递</div>` : ""}
       </td>
-      <td>${cluster.name || "-"}</td>
+      <td>${localizeBatchText(cluster.name || "-")}</td>
       <td>${cluster.jdCount || 0}</td>
       <td>${cluster.averageMatchScore || 0}</td>
-      <td>${(variant.draftContent?.skills || []).slice(0, 5).join(" / ") || "-"}</td>
-      <td>${(variant.rewritePlan || []).slice(0, 2).join("；") || "-"}</td>
-      <td>${variant.truthCheckWarnings?.[0] || "需要人工确认真实性"}</td>
+      <td>${(variant.draftContent?.skills || []).slice(0, 5).map(localizeBatchText).join("、") || "-"}</td>
+      <td>${(variant.rewritePlan || []).slice(0, 2).map(localizeBatchText).join("；") || "-"}</td>
+      <td>${localizeBatchText(variant.truthCheckWarnings?.[0] || "需要人工确认真实性")}</td>
       <td>
         <div class="variant-row-actions">
           <button class="secondary mini-detail" type="button" data-id="${variant.id}">详情</button>
@@ -2687,19 +2697,19 @@ renderVariants = function renderVariantsManaged() {
     const panel = document.createElement("article");
     panel.className = "variant-card";
     panel.innerHTML = `
-      <h3>${variant.draftContent?.title || displayName}</h3>
-      <p>${variant.positioning || ""}</p>
+      <h3>${localizeBatchText(variant.draftContent?.title || displayName)}</h3>
+      <p>${localizeBatchText(variant.positioning || "")}</p>
       <div class="variant-columns">
         <div>
           <strong>关键词策略</strong>
           <div class="chips">${(variant.draftContent?.skills || [])
             .slice(0, 10)
-            .map((kw) => `<span class="chip">${kw}</span>`)
+            .map((kw) => `<span class="chip">${localizeBatchText(kw)}</span>`)
             .join("")}</div>
         </div>
         <div>
           <strong>事实风险</strong>
-          <ul>${(variant.truthCheckWarnings || []).map((item) => `<li>${item}</li>`).join("")}</ul>
+          <ul>${(variant.truthCheckWarnings || []).map((item) => `<li>${localizeBatchText(item)}</li>`).join("")}</ul>
         </div>
       </div>
       <div class="variant-inline-meta">
@@ -2707,9 +2717,9 @@ renderVariants = function renderVariantsManaged() {
         <span>${variantDownloadLabel(variant)}</span>
       </div>
       <strong>草稿摘要</strong>
-      <p>${variant.draftContent?.summary || ""}</p>
+      <p>${localizeBatchText(variant.draftContent?.summary || "")}</p>
       <strong>改写 bullet</strong>
-      <ul>${(variant.draftContent?.bullets || []).map((item) => `<li>${item}</li>`).join("")}</ul>
+      <ul>${(variant.draftContent?.bullets || []).map((item) => `<li>${localizeBatchText(item)}</li>`).join("")}</ul>
       <strong>最近导出</strong>
       <div class="variant-history">
         ${historyItems || `<div class="variant-history-item"><span>还没有导出记录</span><span>等待导出</span></div>`}
@@ -2743,7 +2753,7 @@ async function setPrimaryVariant(id) {
   const variant = state.variants.find((item) => item.id === id);
   if (!variant || variant.isPrimary) return;
   try {
-    await updateVariant(id, { isPrimary: true }, "已设为当前主推版本");
+    await updateVariant(id, { isPrimary: true }, "已设为当前优先投递版本");
   } catch (error) {
     handleUiError(error);
   }
@@ -3013,7 +3023,7 @@ $("variantBtn").addEventListener("click", generateVariants);
 $("cockpitOpenBatchDetail").addEventListener("click", openCurrentBatchDetail);
 $("cockpitJumpPrimary").addEventListener("click", () => {
   const primaryVariant = state.variants.find((item) => item.isPrimary) || state.variants[0];
-  if (!primaryVariant) return toast("先生成简历版本，再定位主推版本", "warn");
+  if (!primaryVariant) return toast("先生成简历版本，再定位优先投递版本", "warn");
   scrollToSection("variantSection");
   loadVariantDetail(primaryVariant.id);
 });

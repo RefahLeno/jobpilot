@@ -2144,8 +2144,8 @@ function clusterJDs(jds, resumeText = "") {
       commonRequirements: keywords.slice(0, 8),
       mustHave: keywords.slice(0, 5),
       niceToHave: keywords.slice(5, 10),
-      reason: `These JDs repeatedly emphasize ${keywords.slice(0, 5).join(", ")}.`,
-      priority: averageMatchScore >= 80 ? "high" : averageMatchScore >= 60 ? "medium" : "observe",
+      reason: `这些 JD 反复强调${keywords.slice(0, 5).join("、")}。`,
+      priority: averageMatchScore >= 80 ? "优先" : averageMatchScore >= 60 ? "一般" : "观察",
       averageMatchScore,
       jdCount: items.length,
     };
@@ -2169,7 +2169,7 @@ function makeResumeVariant(resumeText, cluster, jds) {
   return {
     id: `variant-${cluster.id}`,
     clusterId: cluster.id,
-    name: `${cluster.name} variant`,
+    name: `${cluster.name}版本`,
     positioning: `Designed for ${cluster.name}, covering ${cluster.jdCount} JDs with an average match score of ${cluster.averageMatchScore}.`,
     keywordStrategy: {
       strengthen,
@@ -2688,7 +2688,7 @@ async function handleBatchJdsSecure(req, res) {
 
   const enrichedItems = enrichJDMatches(items, resumeText);
   if (!enrichedItems.length) {
-    const detail = failures.length ? "All URLs failed or no valid JD text was found." : null;
+    const detail = failures.length ? "所有链接均抓取失败，或没有找到有效的岗位描述。" : null;
     return sendError(res, 422, "没有识别到有效的 JD 内容。", detail, "empty_batch_jds");
   }
 
@@ -2729,8 +2729,8 @@ async function handleBatchJdsSecure(req, res) {
 
   sendSuccess(res, 200, {
     message: failures.length
-      ? `Parsed ${enrichedItems.length} JDs, with ${failures.length} failed links.`
-      : `Parsed ${enrichedItems.length} JDs.`,
+      ? `已解析 ${enrichedItems.length} 条岗位描述，其中 ${failures.length} 个链接抓取失败。`
+      : `已解析 ${enrichedItems.length} 条岗位描述。`,
     batchRunId: batchRun.id,
     createdAt: batchRun.createdAt,
     resumeId: linkedResume?.id || "",
@@ -2794,7 +2794,7 @@ async function handleResumeVariantsSecure(req, res) {
   if (!normalizeText(resumeText)) return sendError(res, 400, "请先上传基础简历。", null, "missing_resume_text");
   if (!Array.isArray(clusters) || !clusters.length) return sendError(res, 400, "请先生成岗位方向。", null, "missing_clusters");
   const selected = clusters.filter((cluster) => !targetClusterIds.length || targetClusterIds.includes(cluster.id));
-  if (!selected.length) return sendError(res, 400, "No target cluster was selected.", null, "missing_target_clusters");
+  if (!selected.length) return sendError(res, 400, "请选择至少一个目标岗位方向。", null, "missing_target_clusters");
 
   const resumeRecord = getOwnedRecordOrNull("resumes", resumeId, current.user.id);
   const batchRun = getOwnedRecordOrNull("batchRuns", batchRunId, current.user.id);
@@ -2859,22 +2859,22 @@ async function handleUpdateVariantSecure(req, res, variantId) {
   const patch = {};
   if (typeof name === "string") {
     const nextName = name.trim().slice(0, 60);
-    if (!nextName) return sendError(res, 400, "Variant name cannot be empty.", null, "invalid_variant_name");
+    if (!nextName) return sendError(res, 400, "版本名称不能为空。", null, "invalid_variant_name");
     patch.name = nextName;
   }
   if (typeof isPrimary === "boolean") patch.isPrimary = isPrimary;
   if (typeof deliveryStatus === "string") patch.deliveryStatus = normalizeDeliveryStatus(deliveryStatus);
-  if (!Object.keys(patch).length) return sendError(res, 400, "No changes were provided.", null, "missing_variant_updates");
+  if (!Object.keys(patch).length) return sendError(res, 400, "没有需要保存的修改。", null, "missing_variant_updates");
   if (patch.isPrimary === true && variant.batchRunId) {
     findRecords("variants", (item) => item.batchRunId === variant.batchRunId && item.userId === current.user.id, Infinity).forEach((item) => {
       if (item.id !== variantId && item.isPrimary) updateRecord("variants", item.id, { isPrimary: false });
     });
   }
   const updated = updateRecord("variants", variantId, patch);
-  let message = "Variant updated.";
-  if (patch.isPrimary) message = "Primary variant updated.";
-  else if (patch.deliveryStatus) message = "Delivery status updated.";
-  else if (patch.name) message = "Variant name updated.";
+  let message = "版本已更新。";
+  if (patch.isPrimary) message = "优先投递版本已更新。";
+  else if (patch.deliveryStatus) message = "投递状态已更新。";
+  else if (patch.name) message = "版本名称已更新。";
   sendSuccess(res, 200, { message, item: updated });
 }
 
@@ -2883,7 +2883,7 @@ async function handleExportResumeSecure(req, res) {
   if (!current) return;
   if (!checkQuota(res, current.user, "exports")) return;
   const { variant } = parseJson(await readBody(req, 2 * 1024 * 1024));
-  if (!variant) return sendError(res, 400, "Missing variant payload.", null, "missing_variant");
+  if (!variant) return sendError(res, 400, "缺少简历版本内容。", null, "missing_variant");
   const variantRecord = variant.id ? getRecord("variants", variant.id) : null;
   if (variant.id && !assertOwnership(res, variantRecord, current.user.id, "variant")) return;
   const payloadName = `${Date.now()}-${Math.random().toString(36).slice(2, 8)}.json`;
@@ -2912,7 +2912,7 @@ async function handleExportResumeSecure(req, res) {
       fileName: filename,
     });
     sendSuccess(res, 200, {
-      message: "Word export generated.",
+      message: "简历文档已生成。",
       variantName: variant.name,
       fileName: filename,
       downloadUrl: `/exports/${encodeURIComponent(filename)}`,
@@ -2925,7 +2925,7 @@ async function handleExportResumeSecure(req, res) {
       errorCode: "export_failed",
       message: error.message,
     });
-    return sendError(res, 500, "Word export failed.", error.message, "export_failed");
+    return sendError(res, 500, "简历文档导出失败。", error.message, "export_failed");
   } finally {
     if (fs.existsSync(payloadPath)) fs.unlinkSync(payloadPath);
   }

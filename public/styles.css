@@ -1237,6 +1237,15 @@ h3 {
   gap: 18px;
 }
 
+.resume-panel,
+.jd-panel,
+.batch-list,
+.cluster-panel {
+  display: flex;
+  min-height: 0;
+  flex-direction: column;
+}
+
 .batch-grid {
   display: grid;
   grid-template-columns: 0.9fr 1fr 1fr;
@@ -1371,8 +1380,9 @@ h3 {
 }
 
 .preview-shell {
+  flex: 1;
   margin-top: 14px;
-  height: 420px;
+  min-height: 420px;
   border: 1px solid rgba(212, 226, 244, 0.92);
   border-radius: 20px;
   overflow: hidden;
@@ -2110,10 +2120,12 @@ ul {
 
 .jd-list,
 .cluster-list {
+  flex: 1;
+  min-height: 526px;
   display: grid;
+  align-content: start;
   gap: 12px;
   margin-top: 16px;
-  max-height: 526px;
   overflow: auto;
   padding-right: 4px;
 }
@@ -2969,6 +2981,13 @@ ul {
   .hero-workflow-card {
     height: auto;
     min-height: 320px;
+  }
+
+  .jd-list,
+  .cluster-list {
+    flex: none;
+    min-height: 320px;
+    max-height: 520px;
   }
 
   .preview-score-panel {
